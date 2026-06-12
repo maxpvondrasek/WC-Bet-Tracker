@@ -283,6 +283,11 @@ const FUTURES_SEED = {
     {desc:"Colombia win group K", odds:"+200", risk:50, win:100, status:"pending"},
     {desc:"Lamine Yamal goals O 2.5", odds:"-120", risk:60, win:50, status:"pending"},
     {desc:"Fastest goal scored U 48.5s", odds:"+150", risk:40, win:60, status:"pending"},
+    {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending"},
+    {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending"},
+    {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending"},
+    {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending"},
+    {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending"},
   ],
   fp: [
     {desc:"Austria win group J", odds:"+400", risk:25, win:100, status:"pending"},
@@ -329,7 +334,25 @@ function loadBetsLocal() {
 
 function loadFuturesLocal() {
   const stored = localStorage.getItem('wc26_futures_v2');
-  if (stored) return JSON.parse(stored);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    // Migration: add any new futures from seed that aren't already stored
+    const newReal = [
+      {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending"},
+      {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending"},
+      {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending"},
+      {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending"},
+      {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending"},
+    ];
+    let changed = false;
+    newReal.forEach(f => {
+      if (!parsed.real.find(r => r.desc === f.desc)) {
+        parsed.real.push(f); changed = true;
+      }
+    });
+    if (changed) localStorage.setItem('wc26_futures_v2', JSON.stringify(parsed));
+    return parsed;
+  }
   localStorage.setItem('wc26_futures_v2', JSON.stringify(FUTURES_SEED));
   return JSON.parse(JSON.stringify(FUTURES_SEED));
 }
