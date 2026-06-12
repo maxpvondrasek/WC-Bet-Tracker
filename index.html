@@ -930,7 +930,7 @@ function importFromJson() {
       risk: parseFloat(risk.toFixed(2)),
       toWin: parseFloat((toWin||0).toFixed(2)),
       result: b.result || 'pending',
-      notes: b.notes || 'imported from Claude'
+      notes: b.notes || ''
     });
     added++;
   });
@@ -1090,7 +1090,7 @@ function commitSlipBets() {
       risk: parseFloat(risk.toFixed(2)),
       toWin: parseFloat((toWin||0).toFixed(2)),
       result: 'pending',
-      notes: 'imported from slip'
+      notes: b.notes || ''
     });
     added++;
   });
