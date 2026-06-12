@@ -15,7 +15,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .book-btn{padding:4px 12px;border-radius:20px;border:1px solid #2a2d3a;background:transparent;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
 .book-btn.active{border-color:#6366f1;background:#1e1f3a;color:#818cf8}
 .book-btn.jakball.active{border-color:#f59e0b;background:#1f1a0e;color:#fbbf24}
-.book-btn.play305.active{border-color:#10b981;background:#0d1f17;color:#34d399}
+.book-btn.play305.active{border-color:#f59e0b;background:#1f1a0e;color:#fbbf24}
 .book-btn.all.active{border-color:#6366f1;background:#1e1f3a;color:#818cf8}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 20px}
 @media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -49,7 +49,7 @@ tr:hover td{background:#1a1d2a}
 .type-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;background:#1e2130;color:#818cf8;margin-left:5px;font-weight:500}
 .book-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;margin-left:4px}
 .book-chip.jakball{background:#1f1a0e;color:#fbbf24;border:1px solid #78350f}
-.book-chip.play305{background:#0d1f17;color:#34d399;border:1px solid #065f46}
+.book-chip.play305{background:#1f1a0e;color:#fbbf24;border:1px solid #78350f}
 select.result-sel{background:#1c1f2e;border:1px solid #2a2d3a;color:#e8eaf0;font-size:12px;padding:3px 7px;border-radius:5px;cursor:pointer}
 select.result-sel.win{border-color:#14532d;color:#4ade80}
 select.result-sel.half-win{border-color:#14532d;color:#86efac}
@@ -94,6 +94,8 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
 .bar-val{position:absolute;top:-16px;font-size:9px;font-weight:600;white-space:nowrap;transform:translateX(-50%);left:50%}
 .bar-val.pos{color:#22c55e}
 .bar-val.neg{color:#ef4444}
+.type-filter-btn{padding:3px 10px;border-radius:20px;border:1px solid #2a2d3a;background:transparent;color:#6b7280;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s}
+.type-filter-btn.active{border-color:#818cf8;background:#1e1f3a;color:#c4b5fd}
 .cumline-wrap{background:#161922;border:1px solid #2a2d3a;border-radius:10px;padding:16px;margin-bottom:14px}
 </style>
 </head>
@@ -108,8 +110,17 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
     <label>Sportsbook:</label>
     <button class="book-btn all active" onclick="setBook('all')">All</button>
     <button class="book-btn jakball" onclick="setBook('jakball')">Jakball</button>
-    <button class="book-btn play305" onclick="setBook('other')">Play305</button>
+    <button class="book-btn play305" onclick="setBook('play305')">Play305</button>
   </div>
+</div>
+
+<div style="background:#161922;border-bottom:1px solid #2a2d3a;padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <label style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Bet type:</label>
+  <button class="type-filter-btn active" onclick="setType('all')">All</button>
+  <button class="type-filter-btn" onclick="setType('straight')">Straight</button>
+  <button class="type-filter-btn" onclick="setType('parlay')">Parlay</button>
+  <button class="type-filter-btn" onclick="setType('prop')">Prop</button>
+  <button class="type-filter-btn" onclick="setType('live')">Live</button>
 </div>
 
 <div class="metrics">
@@ -124,6 +135,7 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
   <button class="tab" onclick="switchTab('entry')">+ Add bet</button>
   <button class="tab" onclick="switchTab('pnl')">P&L</button>
   <button class="tab" onclick="switchTab('futures')">Futures vault 🔒</button>
+  <button class="tab" onclick="switchTab('multiday')">Multi-day parlays</button>
 </div>
 
 <div id="tab-log" class="panel active"></div>
@@ -140,8 +152,9 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
       </div>
       <div class="form-group"><label>Match</label><input type="text" id="f-match" placeholder="e.g. Brazil vs Argentina"></div>
       <div class="form-group"><label>Bet type</label>
-        <select id="f-type"><option value="straight">Straight</option><option value="parlay">Parlay</option><option value="prop">Prop</option><option value="live">Live</option></select>
+        <select id="f-type" onchange="toggleMultidayField()"><option value="straight">Straight</option><option value="parlay">Parlay</option><option value="prop">Prop</option><option value="live">Live</option></select>
       </div>
+      <div class="form-group" id="f-multiday-wrap" style="display:none"><label>Last leg date — leave as start date for same-day</label><input type="date" id="f-enddate"></div>
       <div class="form-group full"><label>Bet description</label><input type="text" id="f-desc" placeholder="e.g. Brazil ML, Over 2.5 goals"></div>
       <div class="form-group"><label>Odds (American)</label><input type="text" id="f-odds" placeholder="-110, +250"></div>
       <div class="form-group"><label>Amount risked ($)</label><input type="number" id="f-risk" placeholder="0.00" step="0.01" min="0"></div>
@@ -167,10 +180,12 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
 
 <div id="tab-pnl" class="panel"></div>
 <div id="tab-futures" class="panel"></div>
+<div id="tab-multiday" class="panel"></div>
 
 <script>
 const TODAY = "2026-06-11";
 let activeBook = 'all';
+let activeType = 'all';
 
 // ── SEED DATA ────────────────────────────────────────────────────────────────
 const JAKBALL_SEED = [
@@ -245,6 +260,18 @@ function setBook(b) {
   document.querySelectorAll('.book-btn').forEach(el => {
     el.classList.toggle('active', el.classList.contains(b) || (b==="all" && el.classList.contains("all")));
   });
+  refreshCurrentTab();
+}
+
+function setType(t) {
+  activeType = t;
+  document.querySelectorAll('.type-filter-btn').forEach(el => {
+    el.classList.toggle('active', el.textContent.toLowerCase() === t || (t==='all' && el.textContent.toLowerCase() === 'all'));
+  });
+  refreshCurrentTab();
+}
+
+function refreshCurrentTab() {
   const cur = document.querySelector('.tab.active');
   const tabId = cur ? cur.getAttribute('onclick').replace("switchTab('","").replace("')","") : 'log';
   if (tabId === 'log') render();
@@ -252,8 +279,10 @@ function setBook(b) {
 }
 
 function filteredBets() {
-  if (activeBook === 'all') return bets;
-  return bets.filter(b => b.book === activeBook);
+  return bets.filter(b =>
+    (activeBook === 'all' || b.book === activeBook) &&
+    (activeType === 'all' || b.type === activeType)
+  );
 }
 
 function oddsToWin(odds, risk) {
@@ -288,6 +317,17 @@ function switchTab(t) {
   if (t === 'log') render();
   else if (t === 'pnl') renderPnl();
   else if (t === 'futures') renderFutures();
+  else if (t === 'multiday') renderMultiday();
+}
+
+// ── TOGGLE MULTIDAY FIELD ────────────────────────────────────────────────────
+function toggleMultidayField() {
+  const type = document.getElementById('f-type').value;
+  const wrap = document.getElementById('f-multiday-wrap');
+  wrap.style.display = type === 'parlay' ? 'flex' : 'none';
+  if (type === 'parlay' && !document.getElementById('f-enddate').value) {
+    document.getElementById('f-enddate').value = document.getElementById('f-date').value;
+  }
 }
 
 // ── ADD BET ──────────────────────────────────────────────────────────────────
@@ -302,6 +342,7 @@ function addBet() {
   let toWin = parseFloat(document.getElementById('f-win').value);
   const result = document.getElementById('f-result').value;
   const notes = document.getElementById('f-notes').value.trim();
+  const enddate = type === 'parlay' ? (document.getElementById('f-enddate').value || d) : d;
   const msg = document.getElementById('form-msg');
   if (!d || !match || !desc || isNaN(risk) || risk <= 0) {
     msg.textContent = 'Fill in date, match, description, and risk.';
@@ -312,12 +353,13 @@ function addBet() {
     if (c !== null) toWin = parseFloat(c.toFixed(2));
     else { msg.textContent = 'Enter to-win amount or valid odds.'; msg.style.color = '#ef4444'; return; }
   }
-  bets.push({id: Date.now(), date: d, book, match, desc, type, odds, risk: parseFloat(risk.toFixed(2)), toWin: parseFloat(toWin.toFixed(2)), result, notes});
+  bets.push({id: Date.now(), date: d, enddate, book, match, desc, type, odds, risk: parseFloat(risk.toFixed(2)), toWin: parseFloat(toWin.toFixed(2)), result, notes});
   saveBets();
   msg.textContent = 'Added!'; msg.style.color = '#22c55e';
   setTimeout(() => msg.textContent = '', 2000);
-  ['f-match','f-desc','f-odds','f-risk','f-win','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-match','f-desc','f-odds','f-risk','f-win','f-notes','f-enddate'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-type').value = 'straight';
+  document.getElementById('f-multiday-wrap').style.display = 'none';
   document.getElementById('f-result').value = 'pending';
   render();
 }
@@ -365,7 +407,9 @@ function render() {
     const d = new Date(date + 'T12:00:00');
     const label = d.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
     const rows = db.map(b => {
-      const chip = b.type !== 'straight' ? `<span class="type-chip">${b.type}</span>` : '';
+      const chipColors = {straight:'color:#6ee7b7;background:#064e3b',parlay:'color:#818cf8;background:#1e1f3a',prop:'color:#fb923c;background:#431407',live:'color:#f472b6;background:#4a044e'};
+      const chipStyle = chipColors[b.type]||chipColors.straight;
+      const chip = `<span class="type-chip" style="${chipStyle}">${b.type}</span>`;
       const oddsTag = b.odds ? `<span class="odds-tag">${b.odds}</span>` : '';
       const notesTag = b.notes ? `<span class="notes-tag">${b.notes}</span>` : '';
       const pnl = netPnl(b);
@@ -400,96 +444,132 @@ function render() {
 }
 
 // ── P&L ──────────────────────────────────────────────────────────────────────
+function isMultiday(b) { return b.type === 'parlay' && b.enddate && b.enddate > b.date; }
+
 function renderPnl() {
-  const fb = filteredBets().filter(b => b.result !== 'pending');
   const el = document.getElementById('tab-pnl');
-  if (!fb.length) { el.innerHTML = '<div class="empty">No settled bets yet</div>'; return; }
-  const byDate = {};
-  fb.forEach(b => {
-    if (!byDate[b.date]) byDate[b.date] = {risk:0,toWin:0,net:0,wins:0,losses:0,pushes:0};
-    const d = byDate[b.date];
-    d.risk += b.risk; d.toWin += b.toWin; d.net += netPnl(b);
-    if (b.result==='win'||b.result==='half-win') d.wins++;
-    else if (b.result==='loss'||b.result==='half-loss') d.losses++;
-    else if (b.result==='push') d.pushes++;
-  });
-  const dates = Object.keys(byDate).sort();
-  const maxAbs = Math.max(...dates.map(d => Math.abs(byDate[d].net)), 1);
-
-  // Bar chart
-  const bars = dates.map(date => {
-    const d = byDate[date];
-    const pct = Math.max((Math.abs(d.net) / maxAbs) * 100, 2);
-    const dd = new Date(date + 'T12:00:00');
-    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<div class="bar-wrap">
-      <div class="bar ${d.net>=0?'pos':'neg'}" style="height:${pct}%">
-        <span class="bar-val ${d.net>=0?'pos':'neg'}">${d.net>=0?'+':''}$${Math.abs(d.net).toFixed(0)}</span>
-      </div>
-      <span class="bar-label">${lbl}</span>
-    </div>`;
-  }).join('');
-
-  // Cumulative line (SVG)
-  let running = 0;
-  const points = dates.map(date => { running += byDate[date].net; return running; });
-  const minPt = Math.min(...points, 0);
-  const maxPt = Math.max(...points, 0);
-  const range = maxPt - minPt || 1;
-  const svgH = 100, svgW = 560, pad = 20;
-  const ptCoords = points.map((p, i) => {
-    const x = pad + (i / Math.max(dates.length - 1, 1)) * (svgW - pad * 2);
-    const y = svgH - pad - ((p - minPt) / range) * (svgH - pad * 2);
-    return {x, y, v: p};
-  });
-  const pathD = ptCoords.map((p, i) => (i===0?'M':'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-  const zeroY = svgH - pad - ((0 - minPt) / range) * (svgH - pad * 2);
-  const svgDots = ptCoords.map((p, i) => {
-    const dd = new Date(dates[i] + 'T12:00:00');
-    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="${p.v>=0?'#22c55e':'#ef4444'}">
-      <title>${lbl}: ${p.v>=0?'+':''}$${p.v.toFixed(2)}</title>
-    </circle>`;
-  }).join('');
-
-  // Table
-  let cum = 0;
-  const tableRows = dates.map(date => {
-    const d = byDate[date];
-    cum += d.net;
-    const dd = new Date(date + 'T12:00:00');
-    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<tr>
-      <td>${lbl}</td>
-      <td style="text-align:right">$${d.risk.toFixed(2)}</td>
-      <td style="text-align:right">$${d.toWin.toFixed(2)}</td>
-      <td style="text-align:right" class="${d.net>=0?'net-pos':'net-neg'}">${fmt(d.net)}</td>
-      <td style="text-align:right" class="${cum>=0?'net-pos':'net-neg'}">${fmt(cum)}</td>
-      <td style="text-align:center;font-size:12px;color:#9ca3af">${d.wins}W ${d.losses}L${d.pushes?' '+d.pushes+'P':''}</td>
-    </tr>`;
-  }).join('');
+  const allFiltered = filteredBets().filter(b => b.result !== 'pending');
+  const fb = allFiltered.filter(b => !isMultiday(b));        // daily = exclude multi-day parlays
+  const md = allFiltered.filter(b => isMultiday(b));          // multi-day parlays only
 
   const bookLabel = activeBook === 'all' ? 'All books' : activeBook === 'jakball' ? 'Jakball' : 'Play305';
-  el.innerHTML = `
-    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">${bookLabel}</div>
-    <div class="pnl-chart-wrap">
-      <div class="pnl-chart-title">Daily P&L</div>
-      <div class="bar-chart">${bars}</div>
-    </div>
-    <div class="cumline-wrap">
-      <div class="pnl-chart-title">Cumulative P&L</div>
-      <svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="overflow:visible">
-        <line x1="${pad}" y1="${zeroY.toFixed(1)}" x2="${svgW-pad}" y2="${zeroY.toFixed(1)}" stroke="#2a2d3a" stroke-width="1"/>
-        <path d="${pathD}" fill="none" stroke="${points[points.length-1]>=0?'#22c55e':'#ef4444'}" stroke-width="2"/>
-        ${svgDots}
-      </svg>
-    </div>
-    <div class="day-block">
-      <div style="overflow-x:auto">
-      <table><thead><tr><th>Date</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th style="text-align:right">Day net</th><th style="text-align:right">Running P&L</th><th style="text-align:center">Record</th></tr></thead>
-      <tbody>${tableRows}</tbody></table>
+  const typeLabel = activeType === 'all' ? '' : ' · ' + activeType.charAt(0).toUpperCase() + activeType.slice(1);
+  const filterLabel = bookLabel + typeLabel;
+
+  let html = `<div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">${filterLabel}</div>`;
+
+  // ── DAILY SECTION ──
+  if (!fb.length) {
+    html += '<div class="empty">No settled single-day bets yet</div>';
+  } else {
+    const byDate = {};
+    fb.forEach(b => {
+      if (!byDate[b.date]) byDate[b.date] = {risk:0,toWin:0,net:0,wins:0,losses:0,pushes:0};
+      const d = byDate[b.date];
+      d.risk += b.risk; d.toWin += b.toWin; d.net += netPnl(b);
+      if (b.result==='win'||b.result==='half-win') d.wins++;
+      else if (b.result==='loss'||b.result==='half-loss') d.losses++;
+      else if (b.result==='push') d.pushes++;
+    });
+    const dates = Object.keys(byDate).sort();
+    const maxAbs = Math.max(...dates.map(d => Math.abs(byDate[d].net)), 1);
+
+    const bars = dates.map(date => {
+      const d = byDate[date];
+      const pct = Math.max((Math.abs(d.net) / maxAbs) * 100, 2);
+      const lbl = new Date(date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="bar-wrap">
+        <div class="bar ${d.net>=0?'pos':'neg'}" style="height:${pct}%">
+          <span class="bar-val ${d.net>=0?'pos':'neg'}">${d.net>=0?'+':''}$${Math.abs(d.net).toFixed(0)}</span>
+        </div>
+        <span class="bar-label">${lbl}</span>
+      </div>`;
+    }).join('');
+
+    let running = 0;
+    const points = dates.map(date => { running += byDate[date].net; return running; });
+    const minPt = Math.min(...points, 0), maxPt = Math.max(...points, 0);
+    const range = maxPt - minPt || 1;
+    const svgH = 100, svgW = 560, pad = 20;
+    const ptCoords = points.map((p, i) => {
+      const x = pad + (i / Math.max(dates.length - 1, 1)) * (svgW - pad * 2);
+      const y = svgH - pad - ((p - minPt) / range) * (svgH - pad * 2);
+      return {x, y, v: p};
+    });
+    const pathD = ptCoords.map((p, i) => (i===0?'M':'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+    const zeroY = svgH - pad - ((0 - minPt) / range) * (svgH - pad * 2);
+    const svgDots = ptCoords.map((p, i) => {
+      const lbl = new Date(dates[i] + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="${p.v>=0?'#22c55e':'#ef4444'}"><title>${lbl}: ${p.v>=0?'+':''}$${p.v.toFixed(2)}</title></circle>`;
+    }).join('');
+
+    let cum = 0;
+    const tableRows = dates.map(date => {
+      const d = byDate[date]; cum += d.net;
+      const lbl = new Date(date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<tr>
+        <td>${lbl}</td>
+        <td style="text-align:right">$${d.risk.toFixed(2)}</td>
+        <td style="text-align:right">$${d.toWin.toFixed(2)}</td>
+        <td style="text-align:right" class="${d.net>=0?'net-pos':'net-neg'}">${fmt(d.net)}</td>
+        <td style="text-align:right" class="${cum>=0?'net-pos':'net-neg'}">${fmt(cum)}</td>
+        <td style="text-align:center;font-size:12px;color:#9ca3af">${d.wins}W ${d.losses}L${d.pushes?' '+d.pushes+'P':''}</td>
+      </tr>`;
+    }).join('');
+
+    html += `
+      <div class="pnl-chart-wrap">
+        <div class="pnl-chart-title">Daily P&L <span style="color:#4b5563;font-weight:400;text-transform:none;letter-spacing:0">(single-day bets only)</span></div>
+        <div class="bar-chart">${bars}</div>
       </div>
-    </div>`;
+      <div class="cumline-wrap">
+        <div class="pnl-chart-title">Cumulative P&L</div>
+        <svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="overflow:visible">
+          <line x1="${pad}" y1="${zeroY.toFixed(1)}" x2="${svgW-pad}" y2="${zeroY.toFixed(1)}" stroke="#2a2d3a" stroke-width="1"/>
+          <path d="${pathD}" fill="none" stroke="${points[points.length-1]>=0?'#22c55e':'#ef4444'}" stroke-width="2"/>
+          ${svgDots}
+        </svg>
+      </div>
+      <div class="day-block"><div style="overflow-x:auto">
+        <table><thead><tr><th>Date</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th style="text-align:right">Day net</th><th style="text-align:right">Running P&L</th><th style="text-align:center">Record</th></tr></thead>
+        <tbody>${tableRows}</tbody></table>
+      </div></div>`;
+  }
+
+  // ── MULTI-DAY PARLAY SECTION ──
+  const mdNet = md.reduce((s,b) => s+netPnl(b), 0);
+  const mdRisk = md.reduce((s,b) => s+b.risk, 0);
+  const mdWins = md.filter(b => b.result==='win'||b.result==='half-win').length;
+  const mdLosses = md.filter(b => b.result==='loss'||b.result==='half-loss').length;
+  html += `<div style="margin-top:28px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Multi-day parlays</div>`;
+  if (!md.length) {
+    html += '<div class="empty">No settled multi-day parlays yet</div>';
+  } else {
+    const mdRows = [...md].sort((a,b)=>b.date.localeCompare(a.date)).map(b => {
+      const pnl = netPnl(b);
+      const sd = new Date(b.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const ed = new Date(b.enddate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<tr>
+        <td><span style="font-weight:600;color:#e8eaf0;display:block">${b.match}</span><span style="font-size:11px;color:#6b7280">${sd} → ${ed}</span></td>
+        <td>${bookChip(b.book)}</td>
+        <td style="text-align:right">$${b.risk.toFixed(2)}</td>
+        <td style="text-align:right">$${b.toWin.toFixed(2)}</td>
+        <td style="text-align:right" class="${pnl>=0?'net-pos':'net-neg'}">${fmt(pnl)}</td>
+      </tr>`;
+    }).join('');
+    html += `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+        <div class="metric"><div class="label">Multi-day net</div><div class="value ${mdNet>=0?'pos':'neg'}">${fmt(mdNet)}</div></div>
+        <div class="metric"><div class="label">Risked</div><div class="value neutral">$${mdRisk.toFixed(2)}</div></div>
+        <div class="metric"><div class="label">Record</div><div class="value neutral">${mdWins}W-${mdLosses}L</div></div>
+      </div>
+      <div class="day-block"><div style="overflow-x:auto">
+        <table><thead><tr><th>Parlay</th><th>Book</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th style="text-align:right">Net</th></tr></thead>
+        <tbody>${mdRows}</tbody></table>
+      </div></div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 // ── FUTURES VAULT ────────────────────────────────────────────────────────────
@@ -569,7 +649,101 @@ function renderFutures() {
     </div>`;
 }
 
-// ── ODDS AUTOFILL ─────────────────────────────────────────────────────────────
+// ── MULTI-DAY PARLAYS ────────────────────────────────────────────────────────
+function loadParlays() {
+  const s = localStorage.getItem('wc26_parlays_v1');
+  if (s) return JSON.parse(s);
+  return [];
+}
+function saveParlays() { localStorage.setItem('wc26_parlays_v1', JSON.stringify(parlays)); }
+let parlays = loadParlays();
+
+function addParlay() {
+  const name = document.getElementById('p-name').value.trim();
+  const book = document.getElementById('p-book').value;
+  const startDate = document.getElementById('p-start').value;
+  const endDate = document.getElementById('p-end').value;
+  const risk = parseFloat(document.getElementById('p-risk').value);
+  const toWin = parseFloat(document.getElementById('p-towin').value);
+  const odds = document.getElementById('p-odds').value.trim();
+  const legs = document.getElementById('p-legs').value.trim();
+  const result = document.getElementById('p-result').value;
+  const msg = document.getElementById('p-msg');
+  if (!name || !startDate || !endDate || isNaN(risk) || risk <= 0 || isNaN(toWin) || toWin <= 0) {
+    msg.textContent = 'Fill in name, dates, risk, and to-win.'; msg.style.color='#ef4444'; return;
+  }
+  parlays.push({id: Date.now(), name, book, startDate, endDate, risk, toWin, odds, legs, result});
+  saveParlays();
+  msg.textContent = 'Added!'; msg.style.color = '#22c55e';
+  setTimeout(() => msg.textContent = '', 2000);
+  ['p-name','p-odds','p-risk','p-towin','p-legs'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-result').value = 'pending';
+  renderMultiday();
+}
+
+function deleteParlay(id) {
+  if (!confirm('Delete this parlay?')) return;
+  parlays = parlays.filter(p => p.id !== id);
+  saveParlays(); renderMultiday();
+}
+
+function setParlayResult(id, res) {
+  const p = parlays.find(p => p.id === id);
+  if (p) { p.result = res; saveParlays(); renderMultiday(); }
+}
+
+function renderMultiday() {
+  const el = document.getElementById('tab-multiday');
+  const multiday = bets.filter(b => b.type === 'parlay' && b.enddate && b.enddate > b.date);
+  const totalRisk = multiday.reduce((s,b) => s+b.risk, 0);
+  const totalToWin = multiday.reduce((s,b) => s+b.toWin, 0);
+  const settled = multiday.filter(b => b.result !== 'pending');
+  const totalNet = settled.reduce((s,b) => s+netPnl(b), 0);
+  const wins = settled.filter(b => b.result==='win'||b.result==='half-win').length;
+  const losses = settled.filter(b => b.result==='loss'||b.result==='half-loss').length;
+  const resultLabels = {pending:'Pending',win:'Win ✓','half-win':'½ Win',loss:'Loss ✗','half-loss':'½ Loss',push:'Push'};
+
+  const rows = [...multiday].sort((a,b) => b.date.localeCompare(a.date)).map(b => {
+    const pnl = netPnl(b);
+    const sd = new Date(b.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const ed = new Date(b.enddate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<tr>
+      <td>
+        <span style="font-weight:600;color:#e8eaf0;display:block">${b.match}</span>
+        <span style="font-size:11px;color:#6b7280">${sd} → ${ed}</span>
+      </td>
+      <td>${bookChip(b.book)}</td>
+      <td style="font-size:12px;color:#9ca3af;max-width:280px;white-space:normal;line-height:1.5">${b.desc}${b.odds?`<span class="odds-tag">${b.odds}</span>`:''}</td>
+      <td style="text-align:right;font-weight:500">$${b.risk.toFixed(2)}</td>
+      <td style="text-align:right;font-weight:500">$${b.toWin.toFixed(2)}</td>
+      <td>
+        <select class="result-sel ${b.result}" onchange="setResult(${b.id},this.value)">
+          ${['pending','win','half-win','half-loss','loss','push'].map(r=>
+            `<option value="${r}"${b.result===r?' selected':''}>${resultLabels[r]}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td style="text-align:right;font-weight:600;color:${b.result==='pending'?'#4b5563':pnl>=0?'#22c55e':'#ef4444'}">${b.result==='pending'?'—':fmt(pnl)}</td>
+      <td><button class="del-btn" onclick="deleteBet(${b.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Parlays added via <b style="color:#818cf8">+ Add bet</b> with a "Last leg date" beyond the start date automatically appear here.</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      <div class="metric"><div class="label">Total risked</div><div class="value neutral">$${totalRisk.toFixed(2)}</div></div>
+      <div class="metric"><div class="label">Total to win</div><div class="value neutral">$${totalToWin.toFixed(2)}</div></div>
+      <div class="metric"><div class="label">Net P&L</div><div class="value ${totalNet>=0?'pos':'neg'}">${fmt(totalNet)}</div></div>
+      <div class="metric"><div class="label">Record</div><div class="value neutral">${wins}W-${losses}L</div></div>
+    </div>
+    ${multiday.length === 0 ? '<div class="empty">No multi-day parlays yet — add a parlay with a last leg date beyond the start date</div>' : `
+    <div class="day-block"><div style="overflow-x:auto"><table>
+      <thead><tr><th>Parlay</th><th>Book</th><th>Legs</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th>Result</th><th style="text-align:right">Net</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>`}
+  `;
+}
+
 document.getElementById('f-odds').addEventListener('input', function() {
   const risk = parseFloat(document.getElementById('f-risk').value);
   if (!isNaN(risk) && risk > 0) { const w = oddsToWin(this.value, risk); if (w !== null) document.getElementById('f-win').value = w.toFixed(2); }
