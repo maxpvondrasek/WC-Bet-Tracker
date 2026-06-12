@@ -275,33 +275,33 @@ const OTHER_SEED = [
 
 const FUTURES_SEED = {
   real: [
-    {desc:"Belgium win group G", odds:"-285", risk:142, win:50, status:"pending"},
-    {desc:"Netherlands win group F", odds:"-160", risk:160, win:100, status:"pending"},
-    {desc:"Switzerland win group B", odds:"-145", risk:217, win:150, status:"pending"},
-    {desc:"Argentina reach QF", odds:"-110", risk:110, win:100, status:"pending"},
-    {desc:"Brazil reach QF", odds:"-110", risk:110, win:100, status:"pending"},
-    {desc:"Colombia win group K", odds:"+200", risk:50, win:100, status:"pending"},
-    {desc:"Lamine Yamal goals O 2.5", odds:"-120", risk:60, win:50, status:"pending"},
-    {desc:"Fastest goal scored U 48.5s", odds:"+150", risk:40, win:60, status:"pending"},
-    {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending"},
-    {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending"},
-    {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending"},
-    {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending"},
-    {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending"},
+    {desc:"Belgium win group G", odds:"-285", risk:142, win:50, status:"pending", book:"jakball"},
+    {desc:"Netherlands win group F", odds:"-160", risk:160, win:100, status:"pending", book:"jakball"},
+    {desc:"Switzerland win group B", odds:"-145", risk:217, win:150, status:"pending", book:"jakball"},
+    {desc:"Argentina reach QF", odds:"-110", risk:110, win:100, status:"pending", book:"jakball"},
+    {desc:"Brazil reach QF", odds:"-110", risk:110, win:100, status:"pending", book:"jakball"},
+    {desc:"Colombia win group K", odds:"+200", risk:50, win:100, status:"pending", book:"jakball"},
+    {desc:"Lamine Yamal goals O 2.5", odds:"-120", risk:60, win:50, status:"pending", book:"jakball"},
+    {desc:"Fastest goal scored U 48.5s", odds:"+150", risk:40, win:60, status:"pending", book:"jakball"},
+    {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending", book:"play305"},
+    {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending", book:"play305"},
+    {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending", book:"play305"},
+    {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending", book:"play305"},
+    {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending", book:"play305"},
   ],
   fp: [
-    {desc:"Austria win group J", odds:"+400", risk:25, win:100, status:"pending"},
-    {desc:"Ivory Coast win group E", odds:"+600", risk:20, win:120, status:"pending"},
-    {desc:"Iraq lowest scoring team", odds:"+500", risk:40, win:200, status:"pending"},
-    {desc:"Curacao lowest scoring team", odds:"+550", risk:40, win:220, status:"pending"},
-    {desc:"Julian Alvarez top goalscorer", odds:"+3300", risk:10, win:330, status:"pending"},
-    {desc:"Michael Olise top goalscorer", odds:"+4000", risk:20, win:800, status:"pending"},
-    {desc:"Raphinha top goalscorer", odds:"+2800", risk:10, win:280, status:"pending"},
-    {desc:"Romelu Lukaku top goalscorer", odds:"+3300", risk:10, win:330, status:"pending"},
-    {desc:"Yan Diomande young player", odds:"+2500", risk:10, win:250, status:"pending"},
-    {desc:"Nico OReilly young player", odds:"+1400", risk:15, win:210, status:"pending"},
-    {desc:"Rayan Cherki golden ball", odds:"+3000", risk:15, win:450, status:"pending"},
-    {desc:"Michael Olise golden ball", odds:"+1000", risk:35, win:350, status:"pending"},
+    {desc:"Austria win group J", odds:"+400", risk:25, win:100, status:"pending", book:"jakball"},
+    {desc:"Ivory Coast win group E", odds:"+600", risk:20, win:120, status:"pending", book:"jakball"},
+    {desc:"Iraq lowest scoring team", odds:"+500", risk:40, win:200, status:"pending", book:"jakball"},
+    {desc:"Curacao lowest scoring team", odds:"+550", risk:40, win:220, status:"pending", book:"jakball"},
+    {desc:"Julian Alvarez top goalscorer", odds:"+3300", risk:10, win:330, status:"pending", book:"jakball"},
+    {desc:"Michael Olise top goalscorer", odds:"+4000", risk:20, win:800, status:"pending", book:"jakball"},
+    {desc:"Raphinha top goalscorer", odds:"+2800", risk:10, win:280, status:"pending", book:"jakball"},
+    {desc:"Romelu Lukaku top goalscorer", odds:"+3300", risk:10, win:330, status:"pending", book:"jakball"},
+    {desc:"Yan Diomande young player", odds:"+2500", risk:10, win:250, status:"pending", book:"jakball"},
+    {desc:"Nico OReilly young player", odds:"+1400", risk:15, win:210, status:"pending", book:"jakball"},
+    {desc:"Rayan Cherki golden ball", odds:"+3000", risk:15, win:450, status:"pending", book:"jakball"},
+    {desc:"Michael Olise golden ball", odds:"+1000", risk:35, win:350, status:"pending", book:"jakball"},
   ]
 };
 
@@ -786,7 +786,7 @@ function renderFutures() {
   const realPnl = settledReal.reduce((s,f)=>s+calcFutPnl(f),0);
 
   const realRows = futures.real.map((f,i)=>`<tr>
-    <td>${f.desc}</td>
+    <td>${f.desc} ${f.book?bookChip(f.book):''}</td>
     <td style="color:#818cf8;font-size:11px">${f.odds}</td>
     <td style="text-align:right">$${f.risk}</td>
     <td style="text-align:right;color:#22c55e">$${f.win}</td>
@@ -795,7 +795,7 @@ function renderFutures() {
   </tr>`).join('');
 
   const fpRows = futures.fp.map((f,i)=>`<tr>
-    <td>${f.desc}</td>
+    <td>${f.desc} ${f.book?bookChip(f.book):''}</td>
     <td style="color:#818cf8;font-size:11px">${f.odds}</td>
     <td style="text-align:right"><span style="font-size:10px;color:#818cf8;background:#1e1f3a;padding:1px 5px;border-radius:3px">FP</span> $${f.risk}</td>
     <td style="text-align:right;color:#22c55e">$${f.win}</td>
@@ -804,7 +804,7 @@ function renderFutures() {
   </tr>`).join('');
 
   document.getElementById('tab-futures').innerHTML = `
-    <div class="futures-locked-bar">🔒 Futures are locked. Results update as the tournament runs — nothing added or removed until you say so. <span>Jakball only.</span></div>
+    <div class="futures-locked-bar">🔒 Futures are locked. Results update as the tournament runs — nothing added or removed until you say so. <span>Jakball + Play305.</span></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
       <div class="metric"><div class="label">Real $ risked</div><div class="value neutral">$${totalRealRisk}</div></div>
       <div class="metric"><div class="label">Free play risked</div><div class="value neutral">$${totalFpRisk}</div></div>
