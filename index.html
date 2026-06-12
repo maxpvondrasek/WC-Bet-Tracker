@@ -107,11 +107,14 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
     <h1>⚽ WC 2026 Bet Tracker</h1>
     <div class="sub" id="header-date"></div>
   </div>
-  <div class="book-filter">
-    <label>Sportsbook:</label>
-    <button class="book-btn all active" onclick="setBook('all')">All</button>
-    <button class="book-btn jakball" onclick="setBook('jakball')">Jakball</button>
-    <button class="book-btn play305" onclick="setBook('play305')">Play305</button>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span id="sync-status" style="font-size:12px;"></span>
+    <div class="book-filter">
+      <label>Sportsbook:</label>
+      <button class="book-btn all active" onclick="setBook('all')">All</button>
+      <button class="book-btn jakball" onclick="setBook('jakball')">Jakball</button>
+      <button class="book-btn play305" onclick="setBook('play305')">Play305</button>
+    </div>
   </div>
 </div>
 
@@ -189,15 +192,19 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
     <div style="font-size:13px;color:#9ca3af;margin-bottom:14px;line-height:1.6">
       Upload a screenshot of your bet slip. The site reads the text, tries to pull out each bet, and shows them in an editable table below. Review and fix anything, pick the sportsbook, then add them all. Best results come from clear, cropped screenshots.
     </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-      <label class="btn-add" style="margin:0;cursor:pointer;display:inline-block">
-        Choose image <input type="file" id="slip-file" accept="image/*" style="display:none" onchange="handleSlipUpload(event)">
-      </label>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
       <select id="slip-book" style="background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:13px;padding:8px 10px;border-radius:6px">
         <option value="jakball">Jakball</option>
         <option value="play305">Play305</option>
       </select>
       <span id="slip-status" style="font-size:12px;color:#6b7280"></span>
+    </div>
+    <div id="slip-dropzone" onclick="document.getElementById('slip-file').click()"
+      style="border:2px dashed #2a2d3a;border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:14px;background:#13151c">
+      <div style="font-size:28px;margin-bottom:6px">📷</div>
+      <div style="font-size:14px;color:#e8eaf0;font-weight:500;margin-bottom:4px">Drag &amp; drop a bet slip here</div>
+      <div style="font-size:12px;color:#6b7280">or tap to choose / take a photo</div>
+      <input type="file" id="slip-file" accept="image/*" style="display:none" onchange="handleSlipUpload(event)">
     </div>
     <div id="slip-progress" style="display:none;height:4px;background:#1e2130;border-radius:2px;overflow:hidden;margin-bottom:14px">
       <div id="slip-progress-bar" style="height:100%;width:0%;background:#6366f1;transition:width .2s"></div>
@@ -259,18 +266,24 @@ const FUTURES_SEED = {
   ]
 };
 
-// ── STORAGE ──────────────────────────────────────────────────────────────────
-function loadBets() {
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
+const SB_URL = 'https://xigfhgiobhdqdmgkpuku.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZ2ZoZ2lvYmhkcWRtZ2twdWt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMjkxNDksImV4cCI6MjA5NjgwNTE0OX0.FJCpS4FM5hVyA1_qcLnMxz_3KwritZxVQXt36oAWs_8';
+const SB_HEADERS = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+function sbFetch(path, opts={}) {
+  return fetch(SB_URL + '/rest/v1/' + path, {headers: SB_HEADERS, ...opts});
+}
+
+// ── STORAGE — localStorage (instant) + Supabase (sync) ───────────────────────
+function loadBetsLocal() {
   const stored = localStorage.getItem('wc26_bets_v2');
   if (stored) {
     const parsed = JSON.parse(stored);
-    // One-time migration: patch end dates on the three seed multi-day parlays
     const endDateFixes = { 1749687001:"2026-06-17", 1749687004:"2026-06-16", 1749687005:"2026-06-16" };
     let changed = false;
     parsed.forEach(b => {
-      if (endDateFixes[b.id] && b.enddate !== endDateFixes[b.id]) {
-        b.enddate = endDateFixes[b.id]; changed = true;
-      }
+      if (endDateFixes[b.id] && b.enddate !== endDateFixes[b.id]) { b.enddate = endDateFixes[b.id]; changed = true; }
     });
     if (changed) localStorage.setItem('wc26_bets_v2', JSON.stringify(parsed));
     return parsed;
@@ -280,18 +293,87 @@ function loadBets() {
   return seed;
 }
 
-function loadFutures() {
+function loadFuturesLocal() {
   const stored = localStorage.getItem('wc26_futures_v2');
   if (stored) return JSON.parse(stored);
   localStorage.setItem('wc26_futures_v2', JSON.stringify(FUTURES_SEED));
   return JSON.parse(JSON.stringify(FUTURES_SEED));
 }
 
-function saveBets() { localStorage.setItem('wc26_bets_v2', JSON.stringify(bets)); }
-function saveFutures() { localStorage.setItem('wc26_futures_v2', JSON.stringify(futures)); }
+// Push all bets to Supabase (upsert)
+async function syncBetsToCloud() {
+  try {
+    // Delete all then reinsert to keep it simple
+    await sbFetch('bets?id=gte.0', {method:'DELETE', headers:{...SB_HEADERS,'Prefer':'return=minimal'}});
+    if (bets.length) {
+      const rows = bets.map(b => ({id: b.id, data: b}));
+      await sbFetch('bets', {method:'POST', body: JSON.stringify(rows),
+        headers: {...SB_HEADERS, 'Prefer':'resolution=merge-duplicates'}});
+    }
+    localStorage.setItem('wc26_bets_v2', JSON.stringify(bets));
+    setSyncStatus('synced');
+  } catch(e) { setSyncStatus('error'); }
+}
 
-let bets = loadBets();
-let futures = loadFutures();
+// Push futures/app_state to Supabase
+async function syncFuturesToCloud() {
+  try {
+    await sbFetch('app_state?key=eq.futures', {method:'DELETE'});
+    await sbFetch('app_state', {method:'POST', body: JSON.stringify([{key:'futures', data: futures}]),
+      headers: {...SB_HEADERS, 'Prefer':'resolution=merge-duplicates'}});
+    localStorage.setItem('wc26_futures_v2', JSON.stringify(futures));
+    setSyncStatus('synced');
+  } catch(e) { setSyncStatus('error'); }
+}
+
+// Pull latest from Supabase on load
+async function syncFromCloud() {
+  setSyncStatus('syncing');
+  try {
+    // Load bets
+    const bRes = await sbFetch('bets?select=data&order=id');
+    if (bRes.ok) {
+      const rows = await bRes.json();
+      if (rows.length) {
+        bets = rows.map(r => r.data);
+        localStorage.setItem('wc26_bets_v2', JSON.stringify(bets));
+      }
+    }
+    // Load futures
+    const fRes = await sbFetch('app_state?key=eq.futures&select=data');
+    if (fRes.ok) {
+      const rows = await fRes.json();
+      if (rows.length) {
+        futures = rows[0].data;
+        localStorage.setItem('wc26_futures_v2', JSON.stringify(futures));
+      }
+    }
+    setSyncStatus('synced');
+    render();
+  } catch(e) { setSyncStatus('error'); }
+}
+
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (state === 'syncing') { el.textContent = '↻ Syncing…'; el.style.color = '#6b7280'; }
+  else if (state === 'synced') { el.textContent = '✓ Synced'; el.style.color = '#22c55e'; setTimeout(()=>{ el.textContent=''; }, 3000); }
+  else if (state === 'error') { el.textContent = '⚠ Sync error — working offline'; el.style.color = '#f59e0b'; }
+}
+
+function saveBets() {
+  localStorage.setItem('wc26_bets_v2', JSON.stringify(bets));
+  syncBetsToCloud();
+}
+
+function saveFutures() {
+  localStorage.setItem('wc26_futures_v2', JSON.stringify(futures));
+  syncFuturesToCloud();
+}
+
+// Boot: load from localStorage immediately for instant render, then sync from cloud
+let bets = loadBetsLocal();
+let futures = loadFuturesLocal();
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function setBook(b) {
@@ -786,15 +868,21 @@ function renderMultiday() {
 // ── SLIP OCR UPLOAD ──────────────────────────────────────────────────────────
 let parsedSlipBets = [];
 
-async function handleSlipUpload(event) {
+function handleSlipUpload(event) {
   const file = event.target.files[0];
-  if (!file) return;
+  if (file) processSlipFile(file);
+}
+
+async function processSlipFile(file) {
+  if (!file.type.startsWith('image/')) {
+    document.getElementById('slip-status').textContent = 'That file is not an image.';
+    return;
+  }
   const status = document.getElementById('slip-status');
   const progress = document.getElementById('slip-progress');
   const progressBar = document.getElementById('slip-progress-bar');
   const preview = document.getElementById('slip-preview');
 
-  // Show preview
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
 
@@ -812,8 +900,7 @@ async function handleSlipUpload(event) {
       }
     });
     progress.style.display = 'none';
-    const text = result.data.text;
-    parseSlipText(text);
+    parseSlipText(result.data.text);
   } catch (err) {
     status.textContent = 'Could not read image. Try a clearer screenshot.';
     progress.style.display = 'none';
@@ -948,9 +1035,30 @@ document.getElementById('f-risk').addEventListener('input', function() {
   if (odds) { const w = oddsToWin(odds, parseFloat(this.value)); if (w !== null) document.getElementById('f-win').value = w.toFixed(2); }
 });
 
+// ── DRAG & DROP FOR SLIP UPLOAD ──────────────────────────────────────────────
+(function() {
+  const dz = document.getElementById('slip-dropzone');
+  if (!dz) return;
+  ['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation();
+    dz.style.borderColor = '#6366f1';
+    dz.style.background = '#1a1d2e';
+  }));
+  ['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation();
+    dz.style.borderColor = '#2a2d3a';
+    dz.style.background = '#13151c';
+  }));
+  dz.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file) processSlipFile(file);
+  });
+})();
+
 document.getElementById('f-date').value = TODAY;
 document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 render();
+syncFromCloud();
 </script>
 </body>
 </html>
