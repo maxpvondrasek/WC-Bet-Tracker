@@ -189,28 +189,62 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
 
 <div id="tab-upload" class="panel">
   <div style="max-width:680px">
-    <div style="font-size:13px;color:#9ca3af;margin-bottom:14px;line-height:1.6">
-      Upload a screenshot of your bet slip. The site reads the text, tries to pull out each bet, and shows them in an editable table below. Review and fix anything, pick the sportsbook, then add them all. Best results come from clear, cropped screenshots.
+
+    <!-- ── CLAUDE IMPORT (primary) ── -->
+    <div class="day-block" style="margin-bottom:20px">
+      <div class="day-header"><span class="day-title">📋 Import from Claude</span></div>
+      <div style="padding:14px">
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:12px;line-height:1.6">
+          Upload your bet slip screenshot to Claude, it reads it accurately and gives you a JSON snippet. Paste it below and hit Import.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <select id="import-book" style="background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:13px;padding:8px 10px;border-radius:6px">
+            <option value="jakball">Jakball</option>
+            <option value="play305">Play305</option>
+          </select>
+        </div>
+        <textarea id="import-json" placeholder='Paste JSON from Claude here, e.g.:
+[
+  {"match":"Mexico vs South Africa","desc":"U 2.5 goals","type":"straight","odds":"-110","risk":52,"toWin":47},
+  {"match":"SKO vs CZE","desc":"Czech corners O 4.5","type":"prop","odds":"+140","risk":25,"toWin":35}
+]' style="width:100%;min-height:140px;background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:12px;font-family:monospace;padding:10px;border-radius:6px;resize:vertical;outline:none"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+          <button class="btn-add" onclick="importFromJson()">Import bets</button>
+          <button onclick="document.getElementById('import-json').value=''" style="background:none;border:1px solid #2a2d3a;color:#9ca3af;padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer">Clear</button>
+          <span id="import-msg" class="form-msg"></span>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-      <select id="slip-book" style="background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:13px;padding:8px 10px;border-radius:6px">
-        <option value="jakball">Jakball</option>
-        <option value="play305">Play305</option>
-      </select>
-      <span id="slip-status" style="font-size:12px;color:#6b7280"></span>
+
+    <!-- ── OCR (fallback) ── -->
+    <div class="day-block">
+      <div class="day-header"><span class="day-title">🔍 OCR scan (fallback)</span></div>
+      <div style="padding:14px">
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:12px;line-height:1.6">
+          Auto-scan a screenshot using OCR. Less accurate — review carefully before adding.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <select id="slip-book" style="background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:13px;padding:8px 10px;border-radius:6px">
+            <option value="jakball">Jakball</option>
+            <option value="play305">Play305</option>
+          </select>
+          <span id="slip-status" style="font-size:12px;color:#6b7280"></span>
+        </div>
+        <div id="slip-dropzone" onclick="document.getElementById('slip-file').click()"
+          style="border:2px dashed #2a2d3a;border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:14px;background:#13151c">
+          <div style="font-size:28px;margin-bottom:6px">📷</div>
+          <div style="font-size:14px;color:#e8eaf0;font-weight:500;margin-bottom:4px">Drag &amp; drop a bet slip here</div>
+          <div style="font-size:12px;color:#6b7280">or tap to choose / take a photo</div>
+          <input type="file" id="slip-file" accept="image/*" style="display:none" onchange="handleSlipUpload(event)">
+        </div>
+        <div id="slip-progress" style="display:none;height:4px;background:#1e2130;border-radius:2px;overflow:hidden;margin-bottom:14px">
+          <div id="slip-progress-bar" style="height:100%;width:0%;background:#6366f1;transition:width .2s"></div>
+        </div>
+        <img id="slip-preview" style="display:none;max-width:300px;border-radius:8px;border:1px solid #2a2d3a;margin-bottom:14px">
+        <div id="slip-results"></div>
+      </div>
     </div>
-    <div id="slip-dropzone" onclick="document.getElementById('slip-file').click()"
-      style="border:2px dashed #2a2d3a;border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:14px;background:#13151c">
-      <div style="font-size:28px;margin-bottom:6px">📷</div>
-      <div style="font-size:14px;color:#e8eaf0;font-weight:500;margin-bottom:4px">Drag &amp; drop a bet slip here</div>
-      <div style="font-size:12px;color:#6b7280">or tap to choose / take a photo</div>
-      <input type="file" id="slip-file" accept="image/*" style="display:none" onchange="handleSlipUpload(event)">
-    </div>
-    <div id="slip-progress" style="display:none;height:4px;background:#1e2130;border-radius:2px;overflow:hidden;margin-bottom:14px">
-      <div id="slip-progress-bar" style="height:100%;width:0%;background:#6366f1;transition:width .2s"></div>
-    </div>
-    <img id="slip-preview" style="display:none;max-width:300px;border-radius:8px;border:1px solid #2a2d3a;margin-bottom:14px">
-    <div id="slip-results"></div>
+
   </div>
 </div>
 
@@ -863,6 +897,50 @@ function renderMultiday() {
       <tbody>${rows}</tbody>
     </table></div></div>`}
   `;
+}
+
+// ── CLAUDE JSON IMPORT ────────────────────────────────────────────────────────
+function importFromJson() {
+  const raw = document.getElementById('import-json').value.trim();
+  const book = document.getElementById('import-book').value;
+  const msg = document.getElementById('import-msg');
+  if (!raw) { msg.textContent = 'Paste JSON first.'; msg.style.color='#ef4444'; return; }
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(e) { msg.textContent = 'Invalid JSON — copy it exactly from Claude.'; msg.style.color='#ef4444'; return; }
+  if (!Array.isArray(parsed)) parsed = [parsed];
+  let added = 0;
+  parsed.forEach(b => {
+    const risk = parseFloat(b.risk);
+    if (!b.desc || isNaN(risk) || risk <= 0) return;
+    let toWin = parseFloat(b.toWin);
+    if (isNaN(toWin) || toWin <= 0) {
+      const c = oddsToWin(b.odds, risk);
+      toWin = c !== null ? parseFloat(c.toFixed(2)) : 0;
+    }
+    bets.push({
+      id: Date.now() + added,
+      date: b.date || TODAY,
+      enddate: b.enddate || b.date || TODAY,
+      book: b.book || book,
+      match: b.match || 'Imported',
+      desc: b.desc,
+      type: b.type || 'straight',
+      odds: b.odds || '',
+      risk: parseFloat(risk.toFixed(2)),
+      toWin: parseFloat((toWin||0).toFixed(2)),
+      result: b.result || 'pending',
+      notes: b.notes || 'imported from Claude'
+    });
+    added++;
+  });
+  if (added) {
+    saveBets();
+    msg.textContent = `✓ Added ${added} bet${added>1?'s':''}!`; msg.style.color='#22c55e';
+    setTimeout(() => { document.getElementById('import-json').value=''; msg.textContent=''; }, 2000);
+  } else {
+    msg.textContent = 'No valid bets found — each needs at least desc and risk.'; msg.style.color='#ef4444';
+  }
 }
 
 // ── SLIP OCR UPLOAD ──────────────────────────────────────────────────────────
