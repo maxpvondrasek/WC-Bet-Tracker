@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WC 2026 Bet Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh}
@@ -194,11 +195,11 @@ const JAKBALL_SEED = [
 ];
 
 const OTHER_SEED = [
-  {id:1749687001,date:TODAY,book:"play305",match:"10-Team Parlay",desc:"Switzerland ML · Turkey ML · Spain ML 1H · Uruguay ML · Iran ML · France ML · Norway ML · Argentina ML · Austria ML · Portugal ML",type:"parlay",odds:"",risk:35,toWin:1034,result:"pending",notes:""},
+  {id:1749687001,date:TODAY,enddate:"2026-06-17",book:"play305",match:"10-Team Parlay",desc:"Switzerland ML · Turkey ML · Spain ML 1H · Uruguay ML · Iran ML · France ML · Norway ML · Argentina ML · Austria ML · Portugal ML",type:"parlay",odds:"",risk:35,toWin:1034,result:"pending",notes:""},
   {id:1749687002,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"2nd Half Czech Republic Total Corners Over 2.5",type:"prop",odds:"+157",risk:20,toWin:31,result:"pending",notes:"G9846613"},
   {id:1749687003,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"Pavel Sulc 1+ Assists",type:"prop",odds:"+500",risk:5,toWin:30,result:"pending",notes:"391454556"},
-  {id:1749687004,date:TODAY,book:"play305",match:"DEU/ESP/NOR Parlay",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453990"},
-  {id:1749687005,date:TODAY,book:"play305",match:"DEU/ESP/NOR Parlay (Dupe)",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453975"},
+  {id:1749687004,date:TODAY,enddate:"2026-06-16",book:"play305",match:"DEU/ESP/NOR Parlay",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453990"},
+  {id:1749687005,date:TODAY,enddate:"2026-06-16",book:"play305",match:"DEU/ESP/NOR Parlay (Dupe)",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453975"},
   {id:1749687006,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"First Goal Method / Header",type:"prop",odds:"+450",risk:10,toWin:45,result:"pending",notes:"G9846436"},
   {id:1749687007,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"Czech Republic Total Corners Over 4.5",type:"prop",odds:"+140",risk:25,toWin:35,result:"pending",notes:"G9846378"},
   {id:1749687008,date:TODAY,book:"play305",match:"MEX/RSA/KOR Parlay",desc:"Jimenez 1+ Score/Assist · RSA Under 1.5 · KOR/CZE Under 3.5 · MEX First to Score · KOR/CZE 1H Under 1.5",type:"parlay",odds:"",risk:25,toWin:40,result:"pending",notes:"391432104"},
@@ -235,7 +236,19 @@ const FUTURES_SEED = {
 // ── STORAGE ──────────────────────────────────────────────────────────────────
 function loadBets() {
   const stored = localStorage.getItem('wc26_bets_v2');
-  if (stored) return JSON.parse(stored);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    // One-time migration: patch end dates on the three seed multi-day parlays
+    const endDateFixes = { 1749687001:"2026-06-17", 1749687004:"2026-06-16", 1749687005:"2026-06-16" };
+    let changed = false;
+    parsed.forEach(b => {
+      if (endDateFixes[b.id] && b.enddate !== endDateFixes[b.id]) {
+        b.enddate = endDateFixes[b.id]; changed = true;
+      }
+    });
+    if (changed) localStorage.setItem('wc26_bets_v2', JSON.stringify(parsed));
+    return parsed;
+  }
   const seed = [...JAKBALL_SEED, ...OTHER_SEED];
   localStorage.setItem('wc26_bets_v2', JSON.stringify(seed));
   return seed;
