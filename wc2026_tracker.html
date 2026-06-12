@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 Bet Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh}
+.header{background:#161922;border-bottom:1px solid #2a2d3a;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header-left h1{font-size:15px;font-weight:700;letter-spacing:.02em;color:#e8eaf0}
+.header-left .sub{font-size:12px;color:#6b7280;margin-top:2px}
+.book-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.book-filter label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.book-btn{padding:4px 12px;border-radius:20px;border:1px solid #2a2d3a;background:transparent;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.book-btn.active{border-color:#6366f1;background:#1e1f3a;color:#818cf8}
+.book-btn.jakball.active{border-color:#f59e0b;background:#1f1a0e;color:#fbbf24}
+.book-btn.play305.active{border-color:#10b981;background:#0d1f17;color:#34d399}
+.book-btn.all.active{border-color:#6366f1;background:#1e1f3a;color:#818cf8}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 20px}
+@media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:#161922;border:1px solid #2a2d3a;border-radius:8px;padding:12px 14px}
+.metric .label{font-size:11px;color:#6b7280;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.metric .value{font-size:22px;font-weight:600}
+.metric .value.pos{color:#22c55e}
+.metric .value.neg{color:#ef4444}
+.metric .value.neutral{color:#e8eaf0}
+.tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid #2a2d3a;overflow-x:auto}
+.tab{padding:9px 16px;font-size:13px;font-weight:500;border:none;background:none;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab.active{color:#e8eaf0;border-bottom-color:#6366f1}
+.panel{display:none;padding:16px 20px}.panel.active{display:block}
+.day-block{margin-bottom:14px;border:1px solid #2a2d3a;border-radius:10px;overflow:hidden}
+.day-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#1c1f2e;border-bottom:1px solid #2a2d3a;flex-wrap:wrap;gap:6px}
+.day-title{font-size:13px;font-weight:600;color:#e8eaf0}
+.day-net{font-size:13px;font-weight:600}
+.day-net.pos{color:#22c55e}.day-net.neg{color:#ef4444}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:600;color:#6b7280;border-bottom:1px solid #2a2d3a;text-transform:uppercase;letter-spacing:.06em;background:#161922}
+td{padding:10px 12px;border-bottom:1px solid #1e2130;color:#e8eaf0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1a1d2a}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;letter-spacing:.03em}
+.badge.win{background:#14532d;color:#4ade80}
+.badge.half-win{background:#14532d;color:#4ade80;opacity:.75}
+.badge.loss{background:#450a0a;color:#f87171}
+.badge.half-loss{background:#450a0a;color:#f87171;opacity:.75}
+.badge.push{background:#451a03;color:#fb923c}
+.badge.pending{background:#1e2130;color:#9ca3af}
+.type-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;background:#1e2130;color:#818cf8;margin-left:5px;font-weight:500}
+.book-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;margin-left:4px}
+.book-chip.jakball{background:#1f1a0e;color:#fbbf24;border:1px solid #78350f}
+.book-chip.play305{background:#0d1f17;color:#34d399;border:1px solid #065f46}
+select.result-sel{background:#1c1f2e;border:1px solid #2a2d3a;color:#e8eaf0;font-size:12px;padding:3px 7px;border-radius:5px;cursor:pointer}
+select.result-sel.win{border-color:#14532d;color:#4ade80}
+select.result-sel.half-win{border-color:#14532d;color:#86efac}
+select.result-sel.loss{border-color:#450a0a;color:#f87171}
+select.result-sel.half-loss{border-color:#450a0a;color:#fca5a5}
+select.result-sel.push{border-color:#451a03;color:#fb923c}
+.del-btn{background:none;border:none;cursor:pointer;color:#374151;font-size:15px;padding:2px 4px}
+.del-btn:hover{color:#ef4444}
+.form-wrap{max-width:680px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group select,.form-group textarea{background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:13px;padding:8px 10px;border-radius:6px;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#6366f1}
+.form-group textarea{resize:vertical;min-height:60px;font-family:inherit}
+.form-group select option{background:#161922}
+.btn-add{background:#6366f1;color:#fff;border:none;padding:9px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-add:hover{background:#4f52d4}
+.form-msg{font-size:12px;color:#22c55e;margin-left:10px;align-self:center}
+.match-name{font-weight:600;color:#e8eaf0;display:block;margin-bottom:2px}
+.bet-desc{color:#9ca3af;font-size:12px;line-height:1.5}
+.odds-tag{color:#818cf8;font-size:11px;margin-left:4px}
+.notes-tag{color:#6b7280;font-size:11px;display:block;margin-top:3px;font-style:italic}
+.net-pos{color:#22c55e;font-weight:600}
+.net-neg{color:#ef4444;font-weight:600}
+.empty{text-align:center;padding:40px;color:#4b5563;font-size:14px}
+.futures-section{margin-bottom:16px}
+.futures-section-title{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding:0 2px}
+.futures-locked-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#161922;border:1px solid #2a2d3a;border-radius:8px;margin-bottom:12px;font-size:12px;color:#6b7280}
+.futures-locked-bar span{color:#818cf8;font-weight:600}
+.pnl-chart-wrap{background:#161922;border:1px solid #2a2d3a;border-radius:10px;padding:16px;margin-bottom:14px}
+.pnl-chart-title{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:24px;position:relative}
+.bar-chart::after{content:'';position:absolute;left:0;right:0;bottom:24px;height:1px;background:#2a2d3a}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;height:100%;justify-content:flex-end;position:relative}
+.bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;position:relative;transition:opacity .15s}
+.bar.pos{background:#22c55e}
+.bar.neg{background:#ef4444}
+.bar-label{position:absolute;bottom:-20px;font-size:10px;color:#6b7280;white-space:nowrap;transform:translateX(-50%);left:50%}
+.bar-val{position:absolute;top:-16px;font-size:9px;font-weight:600;white-space:nowrap;transform:translateX(-50%);left:50%}
+.bar-val.pos{color:#22c55e}
+.bar-val.neg{color:#ef4444}
+.cumline-wrap{background:#161922;border:1px solid #2a2d3a;border-radius:10px;padding:16px;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>⚽ WC 2026 Bet Tracker</h1>
+    <div class="sub" id="header-date"></div>
+  </div>
+  <div class="book-filter">
+    <label>Sportsbook:</label>
+    <button class="book-btn all active" onclick="setBook('all')">All</button>
+    <button class="book-btn jakball" onclick="setBook('jakball')">Jakball</button>
+    <button class="book-btn play305" onclick="setBook('other')">Play305</button>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="label">Total risked</div><div class="value neutral" id="m-risked">—</div></div>
+  <div class="metric"><div class="label">Total to win</div><div class="value neutral" id="m-towin">—</div></div>
+  <div class="metric"><div class="label">Net P&L</div><div class="value neutral" id="m-net">—</div></div>
+  <div class="metric"><div class="label">Record (W-L-P)</div><div class="value neutral" id="m-record">—</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('log')">Bet log</button>
+  <button class="tab" onclick="switchTab('entry')">+ Add bet</button>
+  <button class="tab" onclick="switchTab('pnl')">P&L</button>
+  <button class="tab" onclick="switchTab('futures')">Futures vault 🔒</button>
+</div>
+
+<div id="tab-log" class="panel active"></div>
+
+<div id="tab-entry" class="panel">
+  <div class="form-wrap">
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="f-date"></div>
+      <div class="form-group"><label>Sportsbook</label>
+        <select id="f-book">
+          <option value="jakball">Jakball</option>
+          <option value="play305">Play305</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Match</label><input type="text" id="f-match" placeholder="e.g. Brazil vs Argentina"></div>
+      <div class="form-group"><label>Bet type</label>
+        <select id="f-type"><option value="straight">Straight</option><option value="parlay">Parlay</option><option value="prop">Prop</option><option value="live">Live</option></select>
+      </div>
+      <div class="form-group full"><label>Bet description</label><input type="text" id="f-desc" placeholder="e.g. Brazil ML, Over 2.5 goals"></div>
+      <div class="form-group"><label>Odds (American)</label><input type="text" id="f-odds" placeholder="-110, +250"></div>
+      <div class="form-group"><label>Amount risked ($)</label><input type="number" id="f-risk" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="form-group"><label>Amount to win ($)</label><input type="number" id="f-win" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="form-group"><label>Result</label>
+        <select id="f-result">
+          <option value="pending">Pending</option>
+          <option value="win">Win</option>
+          <option value="half-win">½ Win</option>
+          <option value="half-loss">½ Loss</option>
+          <option value="loss">Loss</option>
+          <option value="push">Push</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Notes (optional)</label><textarea id="f-notes" placeholder="Parlay legs, ticket ID, context..."></textarea></div>
+    </div>
+    <div style="display:flex;align-items:center">
+      <button class="btn-add" onclick="addBet()">Add bet</button>
+      <span class="form-msg" id="form-msg"></span>
+    </div>
+  </div>
+</div>
+
+<div id="tab-pnl" class="panel"></div>
+<div id="tab-futures" class="panel"></div>
+
+<script>
+const TODAY = "2026-06-11";
+let activeBook = 'all';
+
+// ── SEED DATA ────────────────────────────────────────────────────────────────
+const JAKBALL_SEED = [
+  {id:1749686001,date:TODAY,book:"jakball",match:"South Africa/Mexico",desc:"U 2,2½ — Asian total",type:"straight",odds:"-105",risk:52,toWin:50,result:"half-win",notes:""},
+  {id:1749686002,date:TODAY,book:"jakball",match:"Czech Republic/South Korea",desc:"U 2,2½ — Asian total",type:"straight",odds:"-125",risk:62,toWin:50,result:"pending",notes:""},
+];
+
+const OTHER_SEED = [
+  {id:1749687001,date:TODAY,book:"play305",match:"10-Team Parlay",desc:"Switzerland ML · Turkey ML · Spain ML 1H · Uruguay ML · Iran ML · France ML · Norway ML · Argentina ML · Austria ML · Portugal ML",type:"parlay",odds:"",risk:35,toWin:1034,result:"pending",notes:""},
+  {id:1749687002,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"2nd Half Czech Republic Total Corners Over 2.5",type:"prop",odds:"+157",risk:20,toWin:31,result:"pending",notes:"G9846613"},
+  {id:1749687003,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"Pavel Sulc 1+ Assists",type:"prop",odds:"+500",risk:5,toWin:30,result:"pending",notes:"391454556"},
+  {id:1749687004,date:TODAY,book:"play305",match:"DEU/ESP/NOR Parlay",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453990"},
+  {id:1749687005,date:TODAY,book:"play305",match:"DEU/ESP/NOR Parlay (Dupe)",desc:"DEU Over 2.5 · Germany ML · Spain ML · ESP Over 1.5 · NOR Over 1.5 · Norway ML",type:"parlay",odds:"",risk:100,toWin:107,result:"pending",notes:"391453975"},
+  {id:1749687006,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"First Goal Method / Header",type:"prop",odds:"+450",risk:10,toWin:45,result:"pending",notes:"G9846436"},
+  {id:1749687007,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"Czech Republic Total Corners Over 4.5",type:"prop",odds:"+140",risk:25,toWin:35,result:"pending",notes:"G9846378"},
+  {id:1749687008,date:TODAY,book:"play305",match:"MEX/RSA/KOR Parlay",desc:"Jimenez 1+ Score/Assist · RSA Under 1.5 · KOR/CZE Under 3.5 · MEX First to Score · KOR/CZE 1H Under 1.5",type:"parlay",odds:"",risk:25,toWin:40,result:"pending",notes:"391432104"},
+  {id:1749687009,date:TODAY,book:"play305",match:"SKO vs CZE",desc:"1st Half Czech Republic Total Corners Over 2.5",type:"prop",odds:"+204",risk:15,toWin:30,result:"win",notes:"G9846612 — CASHED"},
+];
+
+const FUTURES_SEED = {
+  real: [
+    {desc:"Belgium win group G", odds:"-285", risk:142, win:50, status:"pending"},
+    {desc:"Netherlands win group F", odds:"-160", risk:160, win:100, status:"pending"},
+    {desc:"Switzerland win group B", odds:"-145", risk:217, win:150, status:"pending"},
+    {desc:"Argentina reach QF", odds:"-110", risk:110, win:100, status:"pending"},
+    {desc:"Brazil reach QF", odds:"-110", risk:110, win:100, status:"pending"},
+    {desc:"Colombia win group K", odds:"+200", risk:50, win:100, status:"pending"},
+    {desc:"Lamine Yamal goals O 2.5", odds:"-120", risk:60, win:50, status:"pending"},
+    {desc:"Fastest goal scored U 48.5s", odds:"+150", risk:40, win:60, status:"pending"},
+  ],
+  fp: [
+    {desc:"Austria win group J", odds:"+400", risk:25, win:100, status:"pending"},
+    {desc:"Ivory Coast win group E", odds:"+600", risk:20, win:120, status:"pending"},
+    {desc:"Iraq lowest scoring team", odds:"+500", risk:40, win:200, status:"pending"},
+    {desc:"Curacao lowest scoring team", odds:"+550", risk:40, win:220, status:"pending"},
+    {desc:"Julian Alvarez top goalscorer", odds:"+3300", risk:10, win:330, status:"pending"},
+    {desc:"Michael Olise top goalscorer", odds:"+4000", risk:20, win:800, status:"pending"},
+    {desc:"Raphinha top goalscorer", odds:"+2800", risk:10, win:280, status:"pending"},
+    {desc:"Romelu Lukaku top goalscorer", odds:"+3300", risk:10, win:330, status:"pending"},
+    {desc:"Yan Diomande young player", odds:"+2500", risk:10, win:250, status:"pending"},
+    {desc:"Nico OReilly young player", odds:"+1400", risk:15, win:210, status:"pending"},
+    {desc:"Rayan Cherki golden ball", odds:"+3000", risk:15, win:450, status:"pending"},
+    {desc:"Michael Olise golden ball", odds:"+1000", risk:35, win:350, status:"pending"},
+  ]
+};
+
+// ── STORAGE ──────────────────────────────────────────────────────────────────
+function loadBets() {
+  const stored = localStorage.getItem('wc26_bets_v2');
+  if (stored) return JSON.parse(stored);
+  const seed = [...JAKBALL_SEED, ...OTHER_SEED];
+  localStorage.setItem('wc26_bets_v2', JSON.stringify(seed));
+  return seed;
+}
+
+function loadFutures() {
+  const stored = localStorage.getItem('wc26_futures_v2');
+  if (stored) return JSON.parse(stored);
+  localStorage.setItem('wc26_futures_v2', JSON.stringify(FUTURES_SEED));
+  return JSON.parse(JSON.stringify(FUTURES_SEED));
+}
+
+function saveBets() { localStorage.setItem('wc26_bets_v2', JSON.stringify(bets)); }
+function saveFutures() { localStorage.setItem('wc26_futures_v2', JSON.stringify(futures)); }
+
+let bets = loadBets();
+let futures = loadFutures();
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function setBook(b) {
+  activeBook = b;
+  document.querySelectorAll('.book-btn').forEach(el => {
+    el.classList.toggle('active', el.classList.contains(b) || (b==="all" && el.classList.contains("all")));
+  });
+  const cur = document.querySelector('.tab.active');
+  const tabId = cur ? cur.getAttribute('onclick').replace("switchTab('","").replace("')","") : 'log';
+  if (tabId === 'log') render();
+  else if (tabId === 'pnl') renderPnl();
+}
+
+function filteredBets() {
+  if (activeBook === 'all') return bets;
+  return bets.filter(b => b.book === activeBook);
+}
+
+function oddsToWin(odds, risk) {
+  const o = parseFloat(odds);
+  if (isNaN(o)) return null;
+  return o > 0 ? risk * (o / 100) : risk * (100 / Math.abs(o));
+}
+
+function netPnl(b) {
+  if (b.result === 'win') return b.toWin;
+  if (b.result === 'loss') return -b.risk;
+  if (b.result === 'half-win') return Math.round(b.toWin / 2);
+  if (b.result === 'half-loss') return -Math.round(b.risk / 2);
+  return 0;
+}
+
+function fmt(v, sign=true) {
+  const s = v < 0 ? '-' : (v > 0 && sign ? '+' : '');
+  return s + '$' + Math.abs(v).toFixed(2);
+}
+
+function bookChip(book) {
+  return `<span class="book-chip ${book}">${book === 'jakball' ? 'Jakball' : 'Play305'}</span>`;
+}
+
+// ── TAB SWITCH ───────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + t).classList.add('active');
+  if (t === 'log') render();
+  else if (t === 'pnl') renderPnl();
+  else if (t === 'futures') renderFutures();
+}
+
+// ── ADD BET ──────────────────────────────────────────────────────────────────
+function addBet() {
+  const d = document.getElementById('f-date').value;
+  const book = document.getElementById('f-book').value;
+  const match = document.getElementById('f-match').value.trim();
+  const desc = document.getElementById('f-desc').value.trim();
+  const type = document.getElementById('f-type').value;
+  const odds = document.getElementById('f-odds').value.trim();
+  const risk = parseFloat(document.getElementById('f-risk').value);
+  let toWin = parseFloat(document.getElementById('f-win').value);
+  const result = document.getElementById('f-result').value;
+  const notes = document.getElementById('f-notes').value.trim();
+  const msg = document.getElementById('form-msg');
+  if (!d || !match || !desc || isNaN(risk) || risk <= 0) {
+    msg.textContent = 'Fill in date, match, description, and risk.';
+    msg.style.color = '#ef4444'; return;
+  }
+  if (isNaN(toWin) || toWin <= 0) {
+    const c = oddsToWin(odds, risk);
+    if (c !== null) toWin = parseFloat(c.toFixed(2));
+    else { msg.textContent = 'Enter to-win amount or valid odds.'; msg.style.color = '#ef4444'; return; }
+  }
+  bets.push({id: Date.now(), date: d, book, match, desc, type, odds, risk: parseFloat(risk.toFixed(2)), toWin: parseFloat(toWin.toFixed(2)), result, notes});
+  saveBets();
+  msg.textContent = 'Added!'; msg.style.color = '#22c55e';
+  setTimeout(() => msg.textContent = '', 2000);
+  ['f-match','f-desc','f-odds','f-risk','f-win','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-type').value = 'straight';
+  document.getElementById('f-result').value = 'pending';
+  render();
+}
+
+function deleteBet(id) {
+  if (!confirm('Delete this bet?')) return;
+  bets = bets.filter(b => b.id !== id);
+  saveBets(); render();
+}
+
+function setResult(id, res) {
+  const b = bets.find(b => b.id === id);
+  if (b) { b.result = res; saveBets(); render(); }
+}
+
+// ── BET LOG ──────────────────────────────────────────────────────────────────
+function render() {
+  const fb = filteredBets();
+  const totalRisk = fb.reduce((s,b) => s+b.risk, 0);
+  const totalToWin = fb.reduce((s,b) => s+b.toWin, 0);
+  const settled = fb.filter(b => b.result !== 'pending');
+  const totalNet = settled.reduce((s,b) => s+netPnl(b), 0);
+  const wins = settled.filter(b => b.result==='win'||b.result==='half-win').length;
+  const losses = settled.filter(b => b.result==='loss'||b.result==='half-loss').length;
+  const pushes = settled.filter(b => b.result==='push').length;
+  document.getElementById('m-risked').textContent = '$' + totalRisk.toFixed(2);
+  document.getElementById('m-towin').textContent = '$' + totalToWin.toFixed(2);
+  const mn = document.getElementById('m-net');
+  mn.textContent = fmt(totalNet);
+  mn.className = 'value ' + (totalNet > 0 ? 'pos' : totalNet < 0 ? 'neg' : 'neutral');
+  document.getElementById('m-record').textContent = wins + '-' + losses + '-' + pushes;
+
+  const days = {};
+  [...fb].sort((a,b) => a.date.localeCompare(b.date)).forEach(b => {
+    if (!days[b.date]) days[b.date] = [];
+    days[b.date].push(b);
+  });
+  const container = document.getElementById('tab-log');
+  if (!Object.keys(days).length) { container.innerHTML = '<div class="empty">No bets — use the Add bet tab</div>'; return; }
+
+  container.innerHTML = Object.keys(days).sort((a,b) => b.localeCompare(a)).map(date => {
+    const db = days[date];
+    const dayNet = db.reduce((s,b) => s+netPnl(b), 0);
+    const hasSettled = db.some(b => b.result !== 'pending');
+    const d = new Date(date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const rows = db.map(b => {
+      const chip = b.type !== 'straight' ? `<span class="type-chip">${b.type}</span>` : '';
+      const oddsTag = b.odds ? `<span class="odds-tag">${b.odds}</span>` : '';
+      const notesTag = b.notes ? `<span class="notes-tag">${b.notes}</span>` : '';
+      const pnl = netPnl(b);
+      const resultLabels = {pending:'Pending',win:'Win ✓','half-win':'½ Win',loss:'Loss ✗','half-loss':'½ Loss',push:'Push'};
+      return `<tr>
+        <td><span class="match-name">${b.match}${chip}${bookChip(b.book)}</span></td>
+        <td><span class="bet-desc">${b.desc}${oddsTag}${notesTag}</span></td>
+        <td style="text-align:right;white-space:nowrap;font-weight:500">$${b.risk.toFixed(2)}</td>
+        <td style="text-align:right;white-space:nowrap;font-weight:500">$${b.toWin.toFixed(2)}</td>
+        <td>
+          <select class="result-sel ${b.result}" onchange="setResult(${b.id},this.value)">
+            ${['pending','win','half-win','half-loss','loss','push'].map(r =>
+              `<option value="${r}"${b.result===r?' selected':''}>${resultLabels[r]}</option>`
+            ).join('')}
+          </select>
+        </td>
+        <td style="text-align:right;white-space:nowrap;font-weight:600;color:${b.result==='pending'?'#4b5563':pnl>=0?'#22c55e':'#ef4444'}">${b.result==='pending'?'—':fmt(pnl)}</td>
+        <td><button class="del-btn" onclick="deleteBet(${b.id})" title="Delete">✕</button></td>
+      </tr>`;
+    }).join('');
+    return `<div class="day-block">
+      <div class="day-header">
+        <span class="day-title">${label} <span style="font-weight:400;color:#6b7280">(${db.length} bet${db.length>1?'s':''})</span></span>
+        ${hasSettled ? `<span class="day-net ${dayNet>=0?'pos':'neg'}">${fmt(dayNet)}</span>` : '<span style="font-size:12px;color:#6b7280">All pending</span>'}
+      </div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>Match</th><th>Bet</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th>Result</th><th style="text-align:right">Net</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── P&L ──────────────────────────────────────────────────────────────────────
+function renderPnl() {
+  const fb = filteredBets().filter(b => b.result !== 'pending');
+  const el = document.getElementById('tab-pnl');
+  if (!fb.length) { el.innerHTML = '<div class="empty">No settled bets yet</div>'; return; }
+  const byDate = {};
+  fb.forEach(b => {
+    if (!byDate[b.date]) byDate[b.date] = {risk:0,toWin:0,net:0,wins:0,losses:0,pushes:0};
+    const d = byDate[b.date];
+    d.risk += b.risk; d.toWin += b.toWin; d.net += netPnl(b);
+    if (b.result==='win'||b.result==='half-win') d.wins++;
+    else if (b.result==='loss'||b.result==='half-loss') d.losses++;
+    else if (b.result==='push') d.pushes++;
+  });
+  const dates = Object.keys(byDate).sort();
+  const maxAbs = Math.max(...dates.map(d => Math.abs(byDate[d].net)), 1);
+
+  // Bar chart
+  const bars = dates.map(date => {
+    const d = byDate[date];
+    const pct = Math.max((Math.abs(d.net) / maxAbs) * 100, 2);
+    const dd = new Date(date + 'T12:00:00');
+    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<div class="bar-wrap">
+      <div class="bar ${d.net>=0?'pos':'neg'}" style="height:${pct}%">
+        <span class="bar-val ${d.net>=0?'pos':'neg'}">${d.net>=0?'+':''}$${Math.abs(d.net).toFixed(0)}</span>
+      </div>
+      <span class="bar-label">${lbl}</span>
+    </div>`;
+  }).join('');
+
+  // Cumulative line (SVG)
+  let running = 0;
+  const points = dates.map(date => { running += byDate[date].net; return running; });
+  const minPt = Math.min(...points, 0);
+  const maxPt = Math.max(...points, 0);
+  const range = maxPt - minPt || 1;
+  const svgH = 100, svgW = 560, pad = 20;
+  const ptCoords = points.map((p, i) => {
+    const x = pad + (i / Math.max(dates.length - 1, 1)) * (svgW - pad * 2);
+    const y = svgH - pad - ((p - minPt) / range) * (svgH - pad * 2);
+    return {x, y, v: p};
+  });
+  const pathD = ptCoords.map((p, i) => (i===0?'M':'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  const zeroY = svgH - pad - ((0 - minPt) / range) * (svgH - pad * 2);
+  const svgDots = ptCoords.map((p, i) => {
+    const dd = new Date(dates[i] + 'T12:00:00');
+    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="${p.v>=0?'#22c55e':'#ef4444'}">
+      <title>${lbl}: ${p.v>=0?'+':''}$${p.v.toFixed(2)}</title>
+    </circle>`;
+  }).join('');
+
+  // Table
+  let cum = 0;
+  const tableRows = dates.map(date => {
+    const d = byDate[date];
+    cum += d.net;
+    const dd = new Date(date + 'T12:00:00');
+    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<tr>
+      <td>${lbl}</td>
+      <td style="text-align:right">$${d.risk.toFixed(2)}</td>
+      <td style="text-align:right">$${d.toWin.toFixed(2)}</td>
+      <td style="text-align:right" class="${d.net>=0?'net-pos':'net-neg'}">${fmt(d.net)}</td>
+      <td style="text-align:right" class="${cum>=0?'net-pos':'net-neg'}">${fmt(cum)}</td>
+      <td style="text-align:center;font-size:12px;color:#9ca3af">${d.wins}W ${d.losses}L${d.pushes?' '+d.pushes+'P':''}</td>
+    </tr>`;
+  }).join('');
+
+  const bookLabel = activeBook === 'all' ? 'All books' : activeBook === 'jakball' ? 'Jakball' : 'Play305';
+  el.innerHTML = `
+    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">${bookLabel}</div>
+    <div class="pnl-chart-wrap">
+      <div class="pnl-chart-title">Daily P&L</div>
+      <div class="bar-chart">${bars}</div>
+    </div>
+    <div class="cumline-wrap">
+      <div class="pnl-chart-title">Cumulative P&L</div>
+      <svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="overflow:visible">
+        <line x1="${pad}" y1="${zeroY.toFixed(1)}" x2="${svgW-pad}" y2="${zeroY.toFixed(1)}" stroke="#2a2d3a" stroke-width="1"/>
+        <path d="${pathD}" fill="none" stroke="${points[points.length-1]>=0?'#22c55e':'#ef4444'}" stroke-width="2"/>
+        ${svgDots}
+      </svg>
+    </div>
+    <div class="day-block">
+      <div style="overflow-x:auto">
+      <table><thead><tr><th>Date</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th style="text-align:right">Day net</th><th style="text-align:right">Running P&L</th><th style="text-align:center">Record</th></tr></thead>
+      <tbody>${tableRows}</tbody></table>
+      </div>
+    </div>`;
+}
+
+// ── FUTURES VAULT ────────────────────────────────────────────────────────────
+function setFutureResult(type, idx, val) {
+  futures[type][idx].status = val;
+  saveFutures();
+  renderFutures();
+}
+
+function renderFutures() {
+  const statusBadge = s => {
+    const map = {pending:'pending',win:'win','half-win':'half-win',loss:'loss','half-loss':'half-loss',push:'push'};
+    const labels = {pending:'Pending',win:'Win ✓','half-win':'½ Win',loss:'Loss ✗','half-loss':'½ Loss',push:'Push'};
+    return `<span class="badge ${map[s]||'pending'}">${labels[s]||'Pending'}</span>`;
+  };
+  const statusSel = (type, idx, cur) => {
+    const opts = ['pending','win','half-win','half-loss','loss','push'];
+    const labels = {pending:'Pending',win:'Win ✓','half-win':'½ Win','half-loss':'½ Loss',loss:'Loss ✗',push:'Push'};
+    return `<select class="result-sel ${cur}" onchange="setFutureResult('${type}',${idx},this.value)">
+      ${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${labels[o]}</option>`).join('')}
+    </select>`;
+  };
+
+  const totalRealRisk = futures.real.reduce((s,f)=>s+f.risk,0);
+  const totalFpRisk = futures.fp.reduce((s,f)=>s+f.risk,0);
+  const totalMaxWin = [...futures.real,...futures.fp].reduce((s,f)=>s+f.win,0);
+  const settledReal = futures.real.filter(f=>f.status!=='pending');
+  const settledFp = futures.fp.filter(f=>f.status!=='pending');
+  const calcFutPnl = f => {
+    if(f.status==='win') return f.win;
+    if(f.status==='loss') return -f.risk;
+    if(f.status==='half-win') return Math.round(f.win/2);
+    if(f.status==='half-loss') return -Math.round(f.risk/2);
+    return 0;
+  };
+  const realPnl = settledReal.reduce((s,f)=>s+calcFutPnl(f),0);
+
+  const realRows = futures.real.map((f,i)=>`<tr>
+    <td>${f.desc}</td>
+    <td style="color:#818cf8;font-size:11px">${f.odds}</td>
+    <td style="text-align:right">$${f.risk}</td>
+    <td style="text-align:right;color:#22c55e">$${f.win}</td>
+    <td>${statusSel('real',i,f.status)}</td>
+    <td style="text-align:right;font-weight:600;color:${f.status==='pending'?'#4b5563':calcFutPnl(f)>=0?'#22c55e':'#ef4444'}">${f.status==='pending'?'—':fmt(calcFutPnl(f))}</td>
+  </tr>`).join('');
+
+  const fpRows = futures.fp.map((f,i)=>`<tr>
+    <td>${f.desc}</td>
+    <td style="color:#818cf8;font-size:11px">${f.odds}</td>
+    <td style="text-align:right"><span style="font-size:10px;color:#818cf8;background:#1e1f3a;padding:1px 5px;border-radius:3px">FP</span> $${f.risk}</td>
+    <td style="text-align:right;color:#22c55e">$${f.win}</td>
+    <td>${statusSel('fp',i,f.status)}</td>
+    <td style="text-align:right;font-weight:600;color:${f.status==='pending'?'#4b5563':calcFutPnl(f)>=0?'#22c55e':'#ef4444'}">${f.status==='pending'?'—':fmt(calcFutPnl(f))}</td>
+  </tr>`).join('');
+
+  document.getElementById('tab-futures').innerHTML = `
+    <div class="futures-locked-bar">🔒 Futures are locked. Results update as the tournament runs — nothing added or removed until you say so. <span>Jakball only.</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      <div class="metric"><div class="label">Real $ risked</div><div class="value neutral">$${totalRealRisk}</div></div>
+      <div class="metric"><div class="label">Free play risked</div><div class="value neutral">$${totalFpRisk}</div></div>
+      <div class="metric"><div class="label">Max payout</div><div class="value pos">$${totalMaxWin.toLocaleString()}</div></div>
+      <div class="metric"><div class="label">Settled real P&L</div><div class="value ${realPnl>=0?'pos':'neg'}">${fmt(realPnl)}</div></div>
+    </div>
+    <div class="futures-section">
+      <div class="futures-section-title">Real money futures</div>
+      <div class="day-block"><div style="overflow-x:auto"><table>
+        <thead><tr><th>Bet</th><th>Odds</th><th style="text-align:right">Risk</th><th style="text-align:right">To win</th><th>Status</th><th style="text-align:right">Net</th></tr></thead>
+        <tbody>${realRows}</tbody>
+      </table></div></div>
+    </div>
+    <div class="futures-section">
+      <div class="futures-section-title">Free play futures</div>
+      <div class="day-block"><div style="overflow-x:auto"><table>
+        <thead><tr><th>Bet</th><th>Odds</th><th style="text-align:right">Risk</th><th style="text-align:right">To win</th><th>Status</th><th style="text-align:right">Net</th></tr></thead>
+        <tbody>${fpRows}</tbody>
+      </table></div></div>
+    </div>`;
+}
+
+// ── ODDS AUTOFILL ─────────────────────────────────────────────────────────────
+document.getElementById('f-odds').addEventListener('input', function() {
+  const risk = parseFloat(document.getElementById('f-risk').value);
+  if (!isNaN(risk) && risk > 0) { const w = oddsToWin(this.value, risk); if (w !== null) document.getElementById('f-win').value = w.toFixed(2); }
+});
+document.getElementById('f-risk').addEventListener('input', function() {
+  const odds = document.getElementById('f-odds').value;
+  if (odds) { const w = oddsToWin(odds, parseFloat(this.value)); if (w !== null) document.getElementById('f-win').value = w.toFixed(2); }
+});
+
+document.getElementById('f-date').value = TODAY;
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+render();
+</script>
+</body>
+</html>
