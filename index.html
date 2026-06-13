@@ -97,6 +97,20 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
 .bar-val.neg{color:#ef4444}
 .type-filter-btn{padding:3px 10px;border-radius:20px;border:1px solid #2a2d3a;background:transparent;color:#6b7280;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s}
 .type-filter-btn.active{border-color:#818cf8;background:#1e1f3a;color:#c4b5fd}
+.live-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;background:#4a044e;color:#f472b6;margin-left:3px}
+.status-filter-btn{padding:3px 10px;border-radius:20px;border:1px solid #2a2d3a;background:transparent;color:#6b7280;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s}
+.status-filter-btn.active{border-color:#818cf8;background:#1e1f3a;color:#c4b5fd}
+.day-collapse-btn{background:none;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:0 6px;transition:transform .2s}
+.edit-row{display:none;background:#13151c}
+.edit-row.open{display:table-row}
+.edit-row td{padding:10px 12px;border-bottom:1px solid #1e2130}
+.edit-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;align-items:end}
+.edit-grid input,.edit-grid select{background:#161922;border:1px solid #2a2d3a;color:#e8eaf0;font-size:12px;padding:5px 7px;border-radius:5px;width:100%}
+.edit-grid label{font-size:10px;color:#6b7280;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.btn-save{background:#6366f1;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-cancel-edit{background:none;border:1px solid #2a2d3a;color:#9ca3af;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer}
+.edit-btn{background:none;border:none;cursor:pointer;color:#6b7280;font-size:13px;padding:2px 4px}
+.edit-btn:hover{color:#818cf8}
 .cumline-wrap{background:#161922;border:1px solid #2a2d3a;border-radius:10px;padding:16px;margin-bottom:14px}
 </style>
 </head>
@@ -118,13 +132,20 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
   </div>
 </div>
 
-<div style="background:#161922;border-bottom:1px solid #2a2d3a;padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-  <label style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Bet type:</label>
-  <button class="type-filter-btn active" onclick="setType('all')">All</button>
-  <button class="type-filter-btn" onclick="setType('straight')">Straight</button>
-  <button class="type-filter-btn" onclick="setType('parlay')">Parlay</button>
-  <button class="type-filter-btn" onclick="setType('prop')">Prop</button>
-  <button class="type-filter-btn" onclick="setType('live')">Live</button>
+<div style="background:#161922;border-bottom:1px solid #2a2d3a;padding:8px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Bet type:</label>
+    <button class="type-filter-btn active" onclick="setType('all')">All</button>
+    <button class="type-filter-btn" onclick="setType('straight')">Straight</button>
+    <button class="type-filter-btn" onclick="setType('parlay')">Parlay</button>
+    <button class="type-filter-btn" onclick="setType('prop')">Prop</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Status:</label>
+    <button class="status-filter-btn active" onclick="setStatus('all')">All</button>
+    <button class="status-filter-btn" onclick="setStatus('pending')">Pending</button>
+    <button class="status-filter-btn" onclick="setStatus('settled')">Settled</button>
+  </div>
 </div>
 
 <div class="metrics">
@@ -157,7 +178,12 @@ select.result-sel.push{border-color:#451a03;color:#fb923c}
       </div>
       <div class="form-group"><label>Match</label><input type="text" id="f-match" placeholder="e.g. Brazil vs Argentina"></div>
       <div class="form-group"><label>Bet type</label>
-        <select id="f-type" onchange="toggleMultidayField()"><option value="straight">Straight</option><option value="parlay">Parlay</option><option value="prop">Prop</option><option value="live">Live</option></select>
+        <select id="f-type" onchange="toggleMultidayField()"><option value="straight">Straight</option><option value="parlay">Parlay</option><option value="prop">Prop</option></select>
+      </div>
+      <div class="form-group" style="justify-content:flex-end;padding-bottom:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#f472b6;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-live" style="accent-color:#f472b6;width:14px;height:14px"> Live bet
+        </label>
       </div>
       <div class="form-group" id="f-multiday-wrap" style="display:none"><label>Last leg date — leave as start date for same-day</label><input type="date" id="f-enddate"></div>
       <div class="form-group full"><label>Bet description</label><input type="text" id="f-desc" placeholder="e.g. Brazil ML, Over 2.5 goals"></div>
@@ -456,10 +482,21 @@ function refreshCurrentTab() {
   else if (tabId === 'pnl') renderPnl();
 }
 
+let activeStatus = 'all';
+
+function setStatus(s) {
+  activeStatus = s;
+  document.querySelectorAll('.status-filter-btn').forEach(el => {
+    el.classList.toggle('active', el.textContent.toLowerCase() === s || (s==='all' && el.textContent.toLowerCase() === 'all'));
+  });
+  refreshCurrentTab();
+}
+
 function filteredBets() {
   return bets.filter(b =>
     (activeBook === 'all' || b.book === activeBook) &&
-    (activeType === 'all' || b.type === activeType)
+    (activeType === 'all' || b.type === activeType) &&
+    (activeStatus === 'all' || (activeStatus === 'pending' ? b.result === 'pending' : b.result !== 'pending'))
   );
 }
 
@@ -521,6 +558,7 @@ function addBet() {
   const result = document.getElementById('f-result').value;
   const notes = document.getElementById('f-notes').value.trim();
   const enddate = type === 'parlay' ? (document.getElementById('f-enddate').value || d) : d;
+  const live = document.getElementById('f-live').checked;
   const msg = document.getElementById('form-msg');
   if (!d || !match || !desc || isNaN(risk) || risk <= 0) {
     msg.textContent = 'Fill in date, match, description, and risk.';
@@ -531,12 +569,13 @@ function addBet() {
     if (c !== null) toWin = parseFloat(c.toFixed(2));
     else { msg.textContent = 'Enter to-win amount or valid odds.'; msg.style.color = '#ef4444'; return; }
   }
-  bets.push({id: Date.now(), date: d, enddate, book, match, desc, type, odds, risk: parseFloat(risk.toFixed(2)), toWin: parseFloat(toWin.toFixed(2)), result, notes});
+  bets.push({id: Date.now(), date: d, enddate, book, match, desc, type, live, odds, risk: parseFloat(risk.toFixed(2)), toWin: parseFloat(toWin.toFixed(2)), result, notes});
   saveBets();
   msg.textContent = 'Added!'; msg.style.color = '#22c55e';
   setTimeout(() => msg.textContent = '', 2000);
   ['f-match','f-desc','f-odds','f-risk','f-win','f-notes','f-enddate'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-type').value = 'straight';
+  document.getElementById('f-live').checked = false;
   document.getElementById('f-multiday-wrap').style.display = 'none';
   document.getElementById('f-result').value = 'pending';
   render();
@@ -551,6 +590,40 @@ function deleteBet(id) {
 function setResult(id, res) {
   const b = bets.find(b => b.id === id);
   if (b) { b.result = res; saveBets(); render(); }
+}
+
+// ── COLLAPSE STATE ────────────────────────────────────────────────────────────
+const collapsedDays = new Set();
+
+function toggleDay(date) {
+  collapsedDays.has(date) ? collapsedDays.delete(date) : collapsedDays.add(date);
+  render();
+}
+
+// ── EDIT BET ──────────────────────────────────────────────────────────────────
+let editingId = null;
+
+function openEdit(id) {
+  editingId = editingId === id ? null : id;
+  render();
+}
+
+function saveEdit(id) {
+  const b = bets.find(b => b.id === id);
+  if (!b) return;
+  b.match = document.getElementById(`e-match-${id}`).value.trim() || b.match;
+  b.desc = document.getElementById(`e-desc-${id}`).value.trim() || b.desc;
+  b.type = document.getElementById(`e-type-${id}`).value;
+  b.live = document.getElementById(`e-live-${id}`).checked;
+  b.odds = document.getElementById(`e-odds-${id}`).value.trim();
+  b.risk = parseFloat(document.getElementById(`e-risk-${id}`).value) || b.risk;
+  b.toWin = parseFloat(document.getElementById(`e-towin-${id}`).value) || b.toWin;
+  b.book = document.getElementById(`e-book-${id}`).value;
+  b.notes = document.getElementById(`e-notes-${id}`).value.trim();
+  b.date = document.getElementById(`e-date-${id}`).value || b.date;
+  b.enddate = document.getElementById(`e-enddate-${id}`).value || b.date;
+  editingId = null;
+  saveBets();
 }
 
 // ── BET LOG ──────────────────────────────────────────────────────────────────
@@ -582,18 +655,24 @@ function render() {
     const db = days[date];
     const dayNet = db.reduce((s,b) => s+netPnl(b), 0);
     const hasSettled = db.some(b => b.result !== 'pending');
+    const allSettled = db.every(b => b.result !== 'pending');
     const d = new Date(date + 'T12:00:00');
     const label = d.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const isCollapsed = collapsedDays.has(date);
+
     const rows = db.map(b => {
-      const chipColors = {straight:'color:#6ee7b7;background:#064e3b',parlay:'color:#818cf8;background:#1e1f3a',prop:'color:#fb923c;background:#431407',live:'color:#f472b6;background:#4a044e'};
-      const chipStyle = chipColors[b.type]||chipColors.straight;
+      const chipColors = {straight:'color:#6ee7b7;background:#064e3b',parlay:'color:#818cf8;background:#1e1f3a',prop:'color:#fb923c;background:#431407'};
+      const chipStyle = chipColors[b.type] || chipColors.straight;
       const chip = `<span class="type-chip" style="${chipStyle}">${b.type}</span>`;
+      const liveChip = b.live ? `<span class="live-chip">LIVE</span>` : '';
       const oddsTag = b.odds ? `<span class="odds-tag">${b.odds}</span>` : '';
       const notesTag = b.notes ? `<span class="notes-tag">${b.notes}</span>` : '';
       const pnl = netPnl(b);
       const resultLabels = {pending:'Pending',win:'Win ✓','half-win':'½ Win',loss:'Loss ✗','half-loss':'½ Loss',push:'Push'};
-      return `<tr>
-        <td><span class="match-name">${b.match}${chip}${bookChip(b.book)}</span></td>
+      const isEditing = editingId === b.id;
+
+      const mainRow = `<tr>
+        <td><span class="match-name">${b.match}${chip}${liveChip}${bookChip(b.book)}</span></td>
         <td><span class="bet-desc">${b.desc}${oddsTag}${notesTag}</span></td>
         <td style="text-align:right;white-space:nowrap;font-weight:500">$${b.risk.toFixed(2)}</td>
         <td style="text-align:right;white-space:nowrap;font-weight:500">$${b.toWin.toFixed(2)}</td>
@@ -605,18 +684,64 @@ function render() {
           </select>
         </td>
         <td style="text-align:right;white-space:nowrap;font-weight:600;color:${b.result==='pending'?'#4b5563':pnl>=0?'#22c55e':'#ef4444'}">${b.result==='pending'?'—':fmt(pnl)}</td>
-        <td><button class="del-btn" onclick="deleteBet(${b.id})" title="Delete">✕</button></td>
+        <td style="white-space:nowrap">
+          <button class="edit-btn" onclick="openEdit(${b.id})" title="Edit">✏️</button>
+          <button class="del-btn" onclick="deleteBet(${b.id})" title="Delete">✕</button>
+        </td>
       </tr>`;
+
+      const editRow = `<tr class="edit-row ${isEditing?'open':''}">
+        <td colspan="7">
+          <div class="edit-grid">
+            <div><label>Match</label><input id="e-match-${b.id}" type="text" value="${(b.match||'').replace(/"/g,'&quot;')}"></div>
+            <div><label>Type</label>
+              <select id="e-type-${b.id}">
+                <option value="straight"${b.type==='straight'?' selected':''}>Straight</option>
+                <option value="parlay"${b.type==='parlay'?' selected':''}>Parlay</option>
+                <option value="prop"${b.type==='prop'?' selected':''}>Prop</option>
+              </select>
+            </div>
+            <div><label>Book</label>
+              <select id="e-book-${b.id}">
+                <option value="jakball"${b.book==='jakball'?' selected':''}>Jakball</option>
+                <option value="play305"${b.book==='play305'?' selected':''}>Play305</option>
+              </select>
+            </div>
+            <div><label>Odds</label><input id="e-odds-${b.id}" type="text" value="${b.odds||''}"></div>
+            <div><label>Risk ($)</label><input id="e-risk-${b.id}" type="number" value="${b.risk}"></div>
+            <div><label>To Win ($)</label><input id="e-towin-${b.id}" type="number" value="${b.toWin}"></div>
+            <div><label>Date (placed)</label><input id="e-date-${b.id}" type="date" value="${b.date||''}"></div>
+            <div><label>Last leg date</label><input id="e-enddate-${b.id}" type="date" value="${b.enddate||b.date||''}"></div>
+            <div style="grid-column:3/-1"><label>Description</label><input id="e-desc-${b.id}" type="text" value="${(b.desc||'').replace(/"/g,'&quot;')}"></div>
+            <div style="grid-column:1/-1;display:flex;align-items:center;gap:16px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#f472b6;text-transform:none;letter-spacing:0">
+                <input type="checkbox" id="e-live-${b.id}" ${b.live?'checked':''} style="accent-color:#f472b6;width:14px;height:14px"> Live bet
+              </label>
+              <label style="font-size:11px;color:#6b7280;flex:1">Notes <input id="e-notes-${b.id}" type="text" value="${(b.notes||'').replace(/"/g,'&quot;')}" style="margin-left:6px;width:calc(100% - 50px)"></label>
+            </div>
+            <div style="grid-column:1/-1;display:flex;gap:8px;margin-top:4px">
+              <button class="btn-save" onclick="saveEdit(${b.id})">Save</button>
+              <button class="btn-cancel-edit" onclick="openEdit(${b.id})">Cancel</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+
+      return mainRow + editRow;
     }).join('');
+
     return `<div class="day-block">
-      <div class="day-header">
-        <span class="day-title">${label} <span style="font-weight:400;color:#6b7280">(${db.length} bet${db.length>1?'s':''})</span></span>
+      <div class="day-header" style="cursor:pointer" onclick="toggleDay('${date}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="day-collapse-btn" style="transform:${isCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▼</button>
+          <span class="day-title">${label} <span style="font-weight:400;color:#6b7280">(${db.length} bet${db.length>1?'s':''})</span></span>
+        </div>
         ${hasSettled ? `<span class="day-net ${dayNet>=0?'pos':'neg'}">${fmt(dayNet)}</span>` : '<span style="font-size:12px;color:#6b7280">All pending</span>'}
       </div>
-      <div style="overflow-x:auto">
+      ${isCollapsed ? '' : `<div style="overflow-x:auto">
         <table><thead><tr><th>Match</th><th>Bet</th><th style="text-align:right">Risked</th><th style="text-align:right">To win</th><th>Result</th><th style="text-align:right">Net</th><th></th></tr></thead>
         <tbody>${rows}</tbody></table>
-      </div>
+      </div>`}
     </div>`;
   }).join('');
 }
