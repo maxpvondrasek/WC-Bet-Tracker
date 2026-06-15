@@ -314,6 +314,8 @@ const FUTURES_SEED = {
     {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending", book:"play305"},
     {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending", book:"play305"},
     {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending", book:"play305"},
+    {desc:"Federico Valverde Uruguay top goalscorer", odds:"+500", risk:10, win:50, status:"pending", book:"play305"},
+    {desc:"Jeremy Doku Belgium top goalscorer", odds:"+700", risk:10, win:70, status:"pending", book:"play305"},
   ],
   fp: [
     {desc:"Austria win group J", odds:"+400", risk:25, win:100, status:"pending", book:"jakball"},
@@ -364,11 +366,13 @@ function loadFuturesLocal() {
     const parsed = JSON.parse(stored);
     // Migration: add any new futures from seed that aren't already stored
     const newReal = [
-      {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending"},
-      {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending"},
-      {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending"},
-      {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending"},
-      {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending"},
+      {desc:"Vinicius Junior top goalscorer (Golden Boot)", odds:"+3095", risk:10, win:309, status:"pending", book:"play305"},
+      {desc:"Luis Diaz top goalscorer (Golden Boot)", odds:"+5000", risk:10, win:500, status:"pending", book:"play305"},
+      {desc:"Australia finish bottom of Group D", odds:"+100", risk:30, win:30, status:"pending", book:"play305"},
+      {desc:"Sweden finish bottom of Group F", odds:"+274", risk:20, win:54, status:"pending", book:"play305"},
+      {desc:"Ghana finish bottom of Group L", odds:"+180", risk:25, win:45, status:"pending", book:"play305"},
+      {desc:"Federico Valverde Uruguay top goalscorer", odds:"+500", risk:10, win:50, status:"pending", book:"play305"},
+      {desc:"Jeremy Doku Belgium top goalscorer", odds:"+700", risk:10, win:70, status:"pending", book:"play305"},
     ];
     let changed = false;
     newReal.forEach(f => {
